@@ -40,6 +40,7 @@ pub fn terminal_reader () -> Result<String>{
             }) if modifiers.contains(KeyModifiers::CONTROL) => {
                     disable_raw_mode()?;
                     execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                    buffer.push('\0');
                     return Ok(buffer);
             },
 
