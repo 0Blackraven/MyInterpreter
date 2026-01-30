@@ -20,26 +20,43 @@ pub enum TokenType {
 
     // EOF
 }
-
+#[derive(Debug,Clone)]
+#[allow(dead_code)]
+pub enum Literal {
+    String(String),
+    Number(f32),
+    Bool(bool),
+    Nil,
+}
 pub struct Token {
     tokentype: TokenType,
     lexeme: String,
+    literal: Option<Literal>,
     line: u32,
 }
 impl Token {
     #[allow(dead_code)]
-    pub fn new(tokentype: TokenType, lexeme: String, line: u32) -> Self {
-        Token {
-            tokentype,
-            lexeme,
-            line,
+    pub fn new(tokentype: TokenType, lexeme: String, line: u32, literal:Literal) -> Self {
+        match literal {
+            Literal::String(_) | Literal::Number(_) | Literal::Bool(_) => Token {
+                tokentype,
+                lexeme,
+                literal: Some(literal),
+                line,
+            },
+            Literal::Nil => Token {
+                tokentype,
+                lexeme,
+                literal: None,
+                line,
+            },
         }
     }
 
     //just testing purpose
     #[allow(dead_code)]
     pub fn print_token(&self) {
-        println!("{:?} {} {}", self.tokentype, self.lexeme, self.line);
+        println!("{:?} {} {} {:?}", self.tokentype, self.lexeme, self.line, self.literal);
     }
 }
  

@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenType};
+use crate::token::{Literal, Token, TokenType};
 use std::io::Result;
 
 const _KEYWORDS: [&str; 16] = [
@@ -77,63 +77,98 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '.' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::DOT, ".".to_string(), current_line),
+                    Token::new(TokenType::DOT, ".".to_string(), current_line, Literal::Nil),
                     &mut token_lexeme,
                 );
             }
             '{' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::LEFTBRACE, "{".to_string(), current_line),
+                    Token::new(
+                        TokenType::LEFTBRACE,
+                        "{".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             '}' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::RIGHTBRACE, "}".to_string(), current_line),
+                    Token::new(
+                        TokenType::RIGHTBRACE,
+                        "}".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             '(' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::LEFTPAREN, "(".to_string(), current_line),
+                    Token::new(
+                        TokenType::LEFTPAREN,
+                        "(".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             ')' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::RIGHTPAREN, ")".to_string(), current_line),
+                    Token::new(
+                        TokenType::RIGHTPAREN,
+                        ")".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             ',' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::COMMA, ",".to_string(), current_line),
+                    Token::new(
+                        TokenType::COMMA,
+                        ",".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             '-' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::MINUS, "-".to_string(), current_line),
+                    Token::new(
+                        TokenType::MINUS,
+                        "-".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
             }
             '+' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::PLUS, "+".to_string(), current_line),
+                    Token::new(TokenType::PLUS, "+".to_string(), current_line, Literal::Nil),
                     &mut token_lexeme,
                 );
             }
             ';' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::SEMICOLON, ";".to_string(), current_line),
+                    Token::new(
+                        TokenType::SEMICOLON,
+                        ";".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
                     &mut token_lexeme,
                 );
                 current_line += 1;
@@ -141,7 +176,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '*' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::STAR, "*".to_string(), current_line),
+                    Token::new(TokenType::STAR, "*".to_string(), current_line, Literal::Nil),
                     &mut token_lexeme,
                 );
             }
@@ -155,13 +190,23 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         char_iter.next();
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::EQUALEQUAL, "==".to_string(), current_line),
+                            Token::new(
+                                TokenType::EQUALEQUAL,
+                                "==".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     } else {
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::EQUAL, "=".to_string(), current_line),
+                            Token::new(
+                                TokenType::EQUAL,
+                                "=".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     }
@@ -175,13 +220,23 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         char_iter.next();
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::GREATEREQUAL, ">=".to_string(), current_line),
+                            Token::new(
+                                TokenType::GREATEREQUAL,
+                                ">=".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     } else {
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::GREATER, ">".to_string(), current_line),
+                            Token::new(
+                                TokenType::GREATER,
+                                ">".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     }
@@ -195,13 +250,23 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         char_iter.next();
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::LESSEQUAL, "<=".to_string(), current_line),
+                            Token::new(
+                                TokenType::LESSEQUAL,
+                                "<=".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     } else {
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::LESS, "<".to_string(), current_line),
+                            Token::new(
+                                TokenType::LESS,
+                                "<".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     }
@@ -215,20 +280,30 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         char_iter.next();
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::BANGEQUAL, "!=".to_string(), current_line),
+                            Token::new(
+                                TokenType::BANGEQUAL,
+                                "!=".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     } else {
                         push_token(
                             &mut tokens,
-                            Token::new(TokenType::BANG, "!".to_string(), current_line),
+                            Token::new(
+                                TokenType::BANG,
+                                "!".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
                             &mut token_lexeme,
                         );
                     }
                 }
             }
             '/' => {
-                if let Some('/') = char_iter.peek(){
+                if let Some('/') = char_iter.peek() {
                     char_iter.next();
                     while let Some(c) = char_iter.next() {
                         if c == '\n' {
@@ -239,7 +314,12 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                 } else {
                     push_token(
                         &mut tokens,
-                        Token::new(TokenType::SLASH, "/".to_string(), current_line),
+                        Token::new(
+                            TokenType::SLASH,
+                            "/".to_string(),
+                            current_line,
+                            Literal::Nil,
+                        ),
                         &mut token_lexeme,
                     );
                 }
@@ -259,7 +339,12 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                 }
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::STRING, token_lexeme.clone(), current_line),
+                    Token::new(
+                        TokenType::STRING,
+                        token_lexeme.clone(),
+                        current_line,
+                        Literal::String(token_lexeme.clone()),
+                    ),
                     &mut token_lexeme,
                 );
             }
@@ -273,11 +358,24 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         break;
                     }
                 }
-                push_token(
-                    &mut tokens,
-                    Token::new(TokenType::NUMBER, token_lexeme.clone(), current_line),
-                    &mut token_lexeme,
-                );
+                let num_result = token_lexeme.parse::<f32>();
+                match num_result {
+                    Err(_) => {
+                        // give out error that number literal could not be parsed
+                    }
+                    Ok(num) => {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::NUMBER,
+                                token_lexeme.clone(),
+                                current_line,
+                                Literal::Number(num),
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
+                }
             }
 
             c if _is_alphanumeric(c) => {
@@ -291,19 +389,49 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                     }
                 }
                 if _is_keyword(&token_lexeme) {
-                    push_token(
-                        &mut tokens,
-                        Token::new(
-                            _match_keyword(&token_lexeme),
-                            token_lexeme.clone(),
-                            current_line,
-                        ),
-                        &mut token_lexeme,
-                    );
+                    if token_lexeme == "true" {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                _match_keyword(&token_lexeme),
+                                token_lexeme.clone(),
+                                current_line,
+                                Literal::Bool(true),
+                            ),
+                            &mut token_lexeme,
+                        )
+                    } else if token_lexeme == "false" {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                _match_keyword(&token_lexeme),
+                                token_lexeme.clone(),
+                                current_line,
+                                Literal::Bool(false),
+                            ),
+                            &mut token_lexeme,
+                        )
+                    } else {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                _match_keyword(&token_lexeme),
+                                token_lexeme.clone(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
                 } else {
                     push_token(
                         &mut tokens,
-                        Token::new(TokenType::IDENTIFIER, token_lexeme.clone(), current_line),
+                        Token::new(
+                            TokenType::IDENTIFIER,
+                            token_lexeme.clone(),
+                            current_line,
+                            Literal::Nil,
+                        ),
                         &mut token_lexeme,
                     );
                 }
