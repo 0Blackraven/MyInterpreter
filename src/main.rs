@@ -2,6 +2,7 @@ mod terminal_reader;
 mod scanner;
 mod token;
 mod parser;
+mod interpreter;
 use terminal_reader::terminal_reader;
 use parser::print_expr;
 
@@ -21,7 +22,8 @@ fn main() {
                 Ok(tokens) => {
                     let mut parser = parser::Parser::new(tokens);
                     let expression = parser.parse();
-                    println!("{}", print_expr(&expression));
+                    let output = interpreter::interpreter(&expression);
+                    println!("Output: {}", output);
                 }
                 Err(e) => execute_error(0, &format!("Scanner error: {}", e)),
             }

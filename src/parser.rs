@@ -1,4 +1,5 @@
 use crate::token::{Token,TokenType};
+use std::fmt;
 
 // problem : line 76 , 176
 // disclaimer: i will not use the generic way of rust here 
@@ -8,6 +9,7 @@ pub enum ExpressionType {
     Literal(LiteralValue),
     Grouping(Box<ExpressionType>),
 }
+#[derive(Debug,Clone,PartialEq)]
 pub enum LiteralValue {
     String(String),
     Number(f32),
@@ -15,15 +17,26 @@ pub enum LiteralValue {
     Nil,
 }
 
+impl fmt::Display for LiteralValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralValue::String(s) => write!(f, "{}", s),
+            LiteralValue::Number(n) => write!(f, "{}", n),
+            LiteralValue::Bool(b) => write!(f, "{}", b),
+            LiteralValue::Nil => write!(f, "null"),
+        }
+    }
+}
+
 pub struct BinaryExpression {
-    left: Box<ExpressionType>,
-    operator: TokenType,
-    right: Box<ExpressionType>,
+    pub left: Box<ExpressionType>,
+    pub operator: TokenType,
+    pub right: Box<ExpressionType>,
 }
 
 pub struct UnaryExpression {
-    operator: TokenType,
-    right: Box<ExpressionType>,
+    pub operator: TokenType,
+    pub right: Box<ExpressionType>,
 }
 pub struct Parser {
     tokens: Vec<Token>,
