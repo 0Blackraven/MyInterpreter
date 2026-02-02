@@ -444,5 +444,11 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
         }
     }
 
+    tokens.push(Token::new(
+        TokenType::EOF,
+        "".to_string(),
+        current_line,
+        Literal::Nil,
+    ));
     Ok(tokens)
 }
