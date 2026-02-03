@@ -24,10 +24,19 @@ Unary	           ! -	       Right
 
 // this grammar solves the ambiguity and also precedence issues
 
-expression     → equality 
+expression     → assignment;
+assignment     → identifier "=" assignment | equality
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ("/" | "*") unary )* ;
 unary          → ("!" | "-") unary | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | identifier ;
+
+// new addition to flow 
+
+program -> (declaration)* EOF;
+declaration -> let declare | statement;
+statement -> expressionStatement | printStatement;
+expressionStatement -> expression ";" ;
+printStatement -> print expression ";" ;

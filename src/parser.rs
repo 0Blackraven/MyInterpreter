@@ -1,31 +1,29 @@
-use crate::token::{Token,TokenType};
-use std::fmt;
+use crate::token::{Token,TokenType,Literal};
 
 // problem : line 76 , 176
 // disclaimer: i will not use the generic way of rust here 
 pub enum ExpressionType {
     Binary(BinaryExpression),
     Unary(UnaryExpression),
-    Literal(LiteralValue),
+    Literal(Literal),
     Grouping(Box<ExpressionType>),
-}
-#[derive(Debug,Clone,PartialEq)]
-pub enum LiteralValue {
-    String(String),
-    Number(f32),
-    Bool(bool),
-    Nil,
+    Variable(Token),
+    Assignment(AssignExpression)
 }
 
-impl fmt::Display for LiteralValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LiteralValue::String(s) => write!(f, "{}", s),
-            LiteralValue::Number(n) => write!(f, "{}", n),
-            LiteralValue::Bool(b) => write!(f, "{}", b),
-            LiteralValue::Nil => write!(f, "null"),
-        }
-    }
+pub enum StatementType {
+    ExpressionStatement(ExpressionType),
+    PrintStatement(ExpressionType),
+    LetStatement(LetExpressionType)
+}
+pub struct AssignExpression {
+    pub name: Token,
+    pub value : Box<ExpressionType>
+}
+
+pub struct LetExpressionType {
+    pub name : Token,
+    pub initializer : Box<ExpressionType> 
 }
 
 pub struct BinaryExpression {
@@ -51,9 +49,6 @@ impl Parser {
         }
     }
 
-    pub fn parse (&mut self) -> ExpressionType {
-        return self.expression();
-    }
     // helper functions 
     fn match_token (&mut self, types: &[TokenType]) -> bool {
         for t in types {
@@ -69,7 +64,7 @@ impl Parser {
         !self.is_at_end() && &self.peek().tokentype == tokentype
     }
 
-    fn advance (&mut self) -> &Token {
+    fn advance (&mut self) -> Token {
             if !self.is_at_end() {
                 self.current += 1;
             }
@@ -84,11 +79,11 @@ impl Parser {
         return &self.tokens[self.current];
     }
 
-    fn previous (&self) -> &Token {
-        return &self.tokens[self.current - 1];
+    fn previous (&self) -> Token {
+        return self.tokens[self.current - 1].clone();
     }
 
-    fn consume (&mut self, tokentype: TokenType, message: &str) -> &Token {
+    fn consume (&mut self, tokentype: TokenType, message: &str) -> Token {
         if self.check_token(&tokentype) {
             return self.advance();
         }
@@ -101,9 +96,73 @@ impl Parser {
     }
 
     // main parsing functions
+    
+    pub fn parse (&mut self) -> Vec<StatementType> {
+        let mut statements:Vec<StatementType> = Vec::new();
+        while !self.is_at_end() {
+            let statement = self.declaration();
+            statements.push(statement);
+        }
+        return statements;
+    }
+
+    fn declaration (&mut self) -> StatementType {
+        if self.match_token(&[TokenType::LET]) {
+            return self.var_declaration();
+        }
+        return self.statement();
+    }
+
+    fn var_declaration(&mut self) -> StatementType {
+        let name = self.consume(TokenType::IDENTIFIER, "Expected a identifier here");
+        let mut initializer:ExpressionType = ExpressionType::Literal(Literal::Nil);
+        if self.match_token(&[TokenType::EQUAL]) {
+            initializer = self.expression();
+        }
+        self.consume(TokenType::SEMICOLON, "Expected ; at the end");
+        return StatementType::LetStatement(LetExpressionType { name: name, initializer: Box::new(initializer) })
+    }
+
+    fn statement (&mut self) -> StatementType {
+        if self.match_token(&[TokenType::PRINT]) {
+            return self.print_statement();
+        } else {
+            return self.expression_statement();
+        }
+    }
+
+    fn print_statement (&mut self) -> StatementType {
+        let expr = self.expression();
+        self.consume(TokenType::SEMICOLON, "Expect ';' after value.");
+        return StatementType::PrintStatement(expr);
+    }
+
+    fn expression_statement (&mut self) -> StatementType {
+        let expr = self.expression();
+        self.consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+        return StatementType::ExpressionStatement(expr);
+    }
 
     fn expression (&mut self) -> ExpressionType {
-        self.equality() 
+        return self.assignment(); 
+    }
+
+    fn assignment(&mut self) -> ExpressionType {
+        let expr = self.equality();
+
+        if self.match_token(&[TokenType::EQUAL]) {
+            let _equals = self.previous().tokentype.clone();
+            let value = self.assignment();
+
+            match expr {
+                ExpressionType::Variable(name ) => {
+                    let name = name;
+                    return ExpressionType::Assignment(AssignExpression { name: name, value: Box::new(value) })
+                }
+                _ => panic!("Wrong assignment")
+            }
+        }
+        return expr;
     }
 
     fn equality (&mut self) -> ExpressionType {
@@ -186,20 +245,23 @@ impl Parser {
     fn primary (&mut self) -> ExpressionType {
         let expr : ExpressionType;
         if self.match_token(&[TokenType::FALSE]) {
-            expr = ExpressionType::Literal(LiteralValue::Bool(false));
+            expr = ExpressionType::Literal(Literal::Bool(false));
         }else if self.match_token(&[TokenType::TRUE]) {
-            expr = ExpressionType::Literal(LiteralValue::Bool(true));
+            expr = ExpressionType::Literal(Literal::Bool(true));
         }else if self.match_token(&[TokenType::NIL]) {
-            expr = ExpressionType::Literal(LiteralValue::Nil);
+            expr = ExpressionType::Literal(Literal::Nil);
         }else if self.match_token(&[TokenType::NUMBER]) {
-            expr = ExpressionType::Literal(LiteralValue::Number(self.previous().lexeme.parse().unwrap()));
+            expr = ExpressionType::Literal(Literal::Number(self.previous().literal().parse().unwrap()));
         }else if self.match_token(&[TokenType::STRING]) {
-            expr = ExpressionType::Literal(LiteralValue::String(self.previous().lexeme.clone()));
+            expr = ExpressionType::Literal(Literal::String(self.previous().literal().clone()));
         }else if self.match_token(&[TokenType::LEFTPAREN]) {
             let expr = self.expression();
             self.consume(TokenType::RIGHTPAREN, "Expect ')' after expression.");
             return ExpressionType::Grouping(Box::new(expr));
-        } else {
+        } else if self.match_token(&[TokenType::IDENTIFIER]) {
+            return ExpressionType::Variable(self.previous())
+        } 
+        else {
             // handle this gracefully later;
             self.error(self.peek(), "Expect expression.");
         }
@@ -207,6 +269,7 @@ impl Parser {
     }
 }
 
+#[allow(dead_code)]
 pub fn print_expr(expr: &ExpressionType) -> String {
     match expr {
         ExpressionType::Binary(b) => format!(
@@ -228,11 +291,20 @@ pub fn print_expr(expr: &ExpressionType) -> String {
         ),
 
         ExpressionType::Literal(lit) => match lit {
-            LiteralValue::Number(n) => n.to_string(),
-            LiteralValue::String(s) => s.clone(),
-            LiteralValue::Bool(b) => b.to_string(),
-            LiteralValue::Nil => "nil".to_string(),
+            Literal::Number(n) => n.to_string(),
+            Literal::String(s) => s.clone(),
+            Literal::Bool(b) => b.to_string(),
+            Literal::Nil => "nil".to_string(),
         },
+        ExpressionType::Variable(token) => format! (
+            "{} {} {} {} ",
+            token.lexeme, token.line, token.literal(), token.tokentype
+        ),
+        ExpressionType::Assignment(v) => format!(
+            "{} {}",
+            v.name.lexeme,
+            print_expr(&v.value)
+        )
     }
 }
 

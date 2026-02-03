@@ -3,7 +3,7 @@ use std::io::Result;
 
 const _KEYWORDS: [&str; 16] = [
     "and", "class", "else", "false", "func", "for", "if", "null", "or", "print", "return", "super",
-    "this", "true", "var", "while",
+    "this", "true", "let", "while",
 ];
 
 fn _is_keyword(input: &str) -> bool {
@@ -31,7 +31,7 @@ fn _match_keyword(input: &str) -> TokenType {
         "super" => TokenType::SUPER,
         "this" => TokenType::THIS,
         "true" => TokenType::TRUE,
-        "var" => TokenType::VAR,
+        "let" => TokenType::LET,
         "while" => TokenType::WHILE,
         _ => TokenType::IDENTIFIER, // should not reach here
     }
@@ -87,6 +87,18 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                     Token::new(
                         TokenType::LEFTBRACE,
                         "{".to_string(),
+                        current_line,
+                        Literal::Nil,
+                    ),
+                    &mut token_lexeme,
+                );
+            }
+            '%' => {
+                push_token(
+                    &mut tokens,
+                    Token::new(
+                        TokenType::MODULO,
+                        "%".to_string(),
                         current_line,
                         Literal::Nil,
                     ),

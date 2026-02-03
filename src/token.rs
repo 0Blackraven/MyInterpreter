@@ -11,14 +11,14 @@ pub enum TokenType {
     BANG, BANGEQUAL,
     EQUAL, EQUALEQUAL,
     GREATER, GREATEREQUAL,
-    LESS, LESSEQUAL,
+    LESS, LESSEQUAL,MODULO,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,
 
     // Keywords.
     AND, CLASS, ELSE, FALSE, FUNCTION, FOR, IF, NIL, OR,
-    PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
+    PRINT, RETURN, SUPER, THIS, TRUE, LET, WHILE,
 
     EOF
 }
@@ -30,6 +30,7 @@ impl fmt::Display for TokenType {
             TokenType::MINUS => "-",
             TokenType::STAR => "*",
             TokenType::SLASH => "/",
+            TokenType::MODULO => "%",
             TokenType::BANG => "!",
             TokenType::BANGEQUAL => "!=",
             TokenType::EQUAL => "=",
@@ -53,6 +54,19 @@ pub enum Literal {
     Bool(bool),
     Nil,
 }
+
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Literal::String(s) => write!(f, "{}", s),
+            Literal::Number(n) => write!(f, "{}", n),
+            Literal::Bool(b) => write!(f, "{}", b),
+            Literal::Nil => write!(f, "nil"),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Token {
     pub tokentype: TokenType,
     pub lexeme: String,
@@ -60,6 +74,22 @@ pub struct Token {
     pub line: u32,
 }
 impl Token {
+    pub fn literal (&self) -> String {
+        let literal_result = self.literal.clone();
+        match literal_result {
+            Some(value) => {
+                match value {
+                    Literal::String(value ) => return value,
+                    Literal::Number(value) => return value.to_string(),
+                    Literal::Bool(value) => return value.to_string(),
+                    _ => return String::from("not a good thing")
+                }
+            }
+            None => {
+                panic!("Not a literal");
+            }
+        }
+    }
     #[allow(dead_code)]
     pub fn new(tokentype: TokenType, lexeme: String, line: u32, literal:Literal) -> Self {
         match literal {
@@ -76,12 +106,6 @@ impl Token {
                 line,
             },
         }
-    }
-
-    //just testing purpose
-    #[allow(dead_code)]
-    pub fn print_token(&self) {
-        println!("{:?} {} {} {:?}", self.tokentype, self.lexeme, self.line, self.literal);
     }
 }
  
