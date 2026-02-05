@@ -37,6 +37,7 @@ primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression "
 
 program -> (declaration)* EOF;
 declaration -> let declare | statement;
-statement -> expressionStatement | printStatement;
+statement -> expressionStatement | printStatement | block;
 expressionStatement -> expression ";" ;
 printStatement -> print expression ";" ;
+block -> "{" declaration* "}"

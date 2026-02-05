@@ -1,8 +1,9 @@
 use crate::token::Literal;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct Environment {
-    enclosing : Option<Box<Environment>>,
+    pub enclosing : Option<Box<Environment>>,
     variables : HashMap<String, Literal>
 }
 
@@ -18,11 +19,17 @@ impl Environment {
         self.variables.insert(name, value);
     }
 
-    pub fn get (& mut self , name:&String) -> Literal {
+    pub fn get (&self , name:&String) -> Literal {
         let value_option = self.variables.get(name);
         match value_option {
             Some(value) => return value.to_owned(),
-            None => panic!("Not defined variable")
+            None => {
+                if let Some(enclosing) = &self.enclosing {
+                    return enclosing.get(name);
+                } else {
+                    panic!("not found variable get method");
+                }
+            }
         }
     }
 
@@ -30,7 +37,13 @@ impl Environment {
         let x_result = self.variables.get_mut(&name);
         match x_result {
             Some(x) => *x = value.clone(),
-            None => panic!("variable not defined")
+            None =>{
+                if let Some(enclosing) = &mut self.enclosing {
+                    return enclosing.assign(name, value);
+                } else {
+                    panic!("variable not defined");
+                }
+            }
         }
     }
 }

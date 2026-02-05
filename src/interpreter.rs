@@ -3,17 +3,27 @@ use crate::{
     parser::{ExpressionType, StatementType},
     token::{Literal, TokenType},
 };
+use std::mem::replace;
 
 pub struct Interpreter {
     storage: Environment,
 }
 
 impl Interpreter {
-
     pub fn new() -> Self {
         Self {
-            storage: Environment::new(None)
+            storage: Environment::new(None),
         }
+    }
+
+    fn evaluate_blocks(&mut self, statements: Vec<StatementType>) {
+        let previous = replace(&mut self.storage, Environment::new(None));
+        self.storage =  Environment::new(Some(Box::new(previous)));
+        for statement in statements {
+            self.evaluate_statement(statement);
+        }
+        let enclosing = self.storage.enclosing.take().unwrap();
+        self.storage = *enclosing;
     }
 
     fn evaluate(&mut self, expr: &ExpressionType) -> Literal {
@@ -25,7 +35,7 @@ impl Interpreter {
             ExpressionType::Variable(name) => self.storage.get(&name.lexeme),
 
             ExpressionType::Assignment(pookie) => {
-                let value:Literal = self.evaluate(&pookie.value);
+                let value: Literal = self.evaluate(&pookie.value);
                 self.storage.assign(pookie.name.lexeme.clone(), &value);
                 return value;
             }
@@ -118,27 +128,33 @@ impl Interpreter {
         a == b
     }
 
-    pub fn interpreter(&mut self, statements: Vec<StatementType>) {
-        for statement in statements {
-            match statement {
-                StatementType::ExpressionStatement(value) => {
-                    self.evaluate(&value);
-                    println!("expr type so no output but worked ! ");
-                }
-                StatementType::PrintStatement(expr) => {
-                    let output = self.evaluate(&expr);
-                    println!("{}", output);
-                }
-                StatementType::LetStatement(expr) => match *expr.initializer {
-                    ExpressionType::Literal(Literal::Nil) => {
-                        self.storage.define(expr.name.lexeme, Literal::Nil)
-                    }
-                    _ => {
-                        let result = self.evaluate(&expr.initializer);
-                        self.storage.define(expr.name.lexeme, result)
-                    }
-                },
+    fn evaluate_statement(&mut self, statement: StatementType) {
+        match statement {
+            StatementType::ExpressionStatement(value) => {
+                self.evaluate(&value);
+                println!("expr type so no output but worked ! ");
             }
+            StatementType::PrintStatement(expr) => {
+                let output = self.evaluate(&expr);
+                println!("{}", output);
+            }
+            StatementType::LetStatement(expr) => match *expr.initializer {
+                ExpressionType::Literal(Literal::Nil) => {
+                    self.storage.define(expr.name.lexeme, Literal::Nil)
+                }
+                _ => {
+                    let result = self.evaluate(&expr.initializer);
+                    self.storage.define(expr.name.lexeme, result)
+                }
+            },
+            StatementType::BlockStatement(statements) => self.evaluate_blocks(statements),
         }
     }
+    pub fn interpreter(&mut self, statements: Vec<StatementType>) {
+        for statement in statements {
+            self.evaluate_statement(statement);
+        }
+    }
+
 }
+

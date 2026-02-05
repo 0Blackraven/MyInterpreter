@@ -14,7 +14,8 @@ pub enum ExpressionType {
 pub enum StatementType {
     ExpressionStatement(ExpressionType),
     PrintStatement(ExpressionType),
-    LetStatement(LetExpressionType)
+    LetStatement(LetExpressionType),
+    BlockStatement(Vec<StatementType>),
 }
 pub struct AssignExpression {
     pub name: Token,
@@ -126,9 +127,21 @@ impl Parser {
     fn statement (&mut self) -> StatementType {
         if self.match_token(&[TokenType::PRINT]) {
             return self.print_statement();
+        } else if self.match_token(&[TokenType::LEFTBRACE]) {
+            return self.block_statement();
         } else {
             return self.expression_statement();
         }
+    }
+
+    fn block_statement (&mut self) -> StatementType {
+        let mut statements:Vec<StatementType> = Vec::new();
+
+        while !self.check_token(&TokenType::RIGHTBRACE) && !self.is_at_end() {
+            statements.push(self.declaration());
+        }
+        self.consume(TokenType::RIGHTBRACE, "Expected a }");
+        return StatementType::BlockStatement(statements);
     }
 
     fn print_statement (&mut self) -> StatementType {
@@ -260,7 +273,7 @@ impl Parser {
             return ExpressionType::Grouping(Box::new(expr));
         } else if self.match_token(&[TokenType::IDENTIFIER]) {
             return ExpressionType::Variable(self.previous())
-        } 
+        }
         else {
             // handle this gracefully later;
             self.error(self.peek(), "Expect expression.");
