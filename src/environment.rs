@@ -1,3 +1,4 @@
+
 use crate::token::Literal;
 use std::collections::HashMap;
 
@@ -27,7 +28,7 @@ impl Environment {
                 if let Some(enclosing) = &self.enclosing {
                     return enclosing.get(name);
                 } else {
-                    panic!("not found variable get method");
+                    panic!("not found variable get method {}", name);
                 }
             }
         }
@@ -41,7 +42,7 @@ impl Environment {
                 if let Some(enclosing) = &mut self.enclosing {
                     return enclosing.assign(name, value);
                 } else {
-                    panic!("variable not defined");
+                    panic!("variable not defined {}", name);
                 }
             }
         }

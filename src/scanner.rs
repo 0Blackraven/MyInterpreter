@@ -17,7 +17,6 @@ fn _is_keyword(input: &str) -> bool {
 
 fn _match_keyword(input: &str) -> TokenType {
     match input {
-        "and" => TokenType::AND,
         "class" => TokenType::CLASS,
         "else" => TokenType::ELSE,
         "false" => TokenType::FALSE,
@@ -25,7 +24,6 @@ fn _match_keyword(input: &str) -> TokenType {
         "for" => TokenType::FOR,
         "if" => TokenType::IF,
         "null" => TokenType::NIL,
-        "or" => TokenType::OR,
         "print" => TokenType::PRINT,
         "return" => TokenType::RETURN,
         "super" => TokenType::SUPER,
@@ -216,6 +214,44 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                             Token::new(
                                 TokenType::EQUAL,
                                 "=".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
+                }
+            }
+            '&' => {
+                if let Some(next_char) = char_iter.peek(){
+                    if next_char == &'\0' {
+                        // give out error
+                    } else if next_char == &'&' {
+                        char_iter.next();
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::AND,
+                                "&&".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
+                }
+            }
+            '|' => {
+                if let Some(next_char) = char_iter.peek(){
+                    if next_char == &'\0' {
+                        // give out error
+                    } else if next_char == &'|' {
+                        char_iter.next();
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::OR,
+                                "||".to_string(),
                                 current_line,
                                 Literal::Nil,
                             ),

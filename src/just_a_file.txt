@@ -25,7 +25,9 @@ Unary	           ! -	       Right
 // this grammar solves the ambiguity and also precedence issues
 
 expression     → assignment;
-assignment     → identifier "=" assignment | equality
+assignment     → identifier "=" assignment | logic_or;
+logic_or       → logic_and ("or" logic_and)*;
+logic_and      → equality ("and" equality)*;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
@@ -35,9 +37,15 @@ primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression "
 
 // new addition to flow 
 
-program -> (declaration)* EOF;
-declaration -> let declare | statement;
-statement -> expressionStatement | printStatement | block;
+program -> (declaration)* EOF ;
+declaration -> letStatement | statement ;
+letStatement -> "let" identifier "=" expression;
+statement -> expressionStatement | printStatement | block | ifStatement | whileStatement | forStatement ;
 expressionStatement -> expression ";" ;
 printStatement -> print expression ";" ;
-block -> "{" declaration* "}"
+block -> "{" declaration* "}" ;
+ifStatement -> comparison , statement + statement ; 
+whileStatement -> "while" "(" expression ")" statement ;
+forStatement -> "for" "(" ( varDecl | exprStmt | ";" )
+                 expression? ";"
+                 expression? ")" statement ;

@@ -1,6 +1,6 @@
 use crate::{
     environment::Environment,
-    parser::{ExpressionType, StatementType},
+    parser::{ExpressionType, IfType, StatementType, WhileType},
     token::{Literal, TokenType},
 };
 use std::mem::replace;
@@ -16,14 +16,37 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_blocks(&mut self, statements: Vec<StatementType>) {
+    fn evaluate_blocks(&mut self, statements: &Vec<StatementType>) {
         let previous = replace(&mut self.storage, Environment::new(None));
-        self.storage =  Environment::new(Some(Box::new(previous)));
+        self.storage = Environment::new(Some(Box::new(previous)));
         for statement in statements {
-            self.evaluate_statement(statement);
+            self.evaluate_statement(&statement)
         }
         let enclosing = self.storage.enclosing.take().unwrap();
         self.storage = *enclosing;
+    }
+
+    fn evaluate_if(&mut self, ifinput: &IfType) {
+        let comparison = self.evaluate(&ifinput.comparison);
+
+        if self.is_truthy(&comparison) {
+            let ifcase: &StatementType = &*ifinput.ifcase;
+            self.evaluate_statement(ifcase);
+        } else if let Some(elsecase) = &ifinput.elsecase {
+            self.evaluate_statement(&*elsecase);
+        }
+    }
+
+    fn evaluate_while(&mut self, wild: &WhileType) {
+        let condition = &wild.condition;
+        let statement = &*wild.statement;
+
+        while {
+            let cond = self.evaluate(condition);
+            self.is_truthy(&cond)
+        } {
+            self.evaluate_statement(statement);
+        }
     }
 
     fn evaluate(&mut self, expr: &ExpressionType) -> Literal {
@@ -54,6 +77,20 @@ impl Interpreter {
                     TokenType::BANG => Literal::Bool(!self.is_truthy(&right)),
                     _ => unreachable!(),
                 }
+            }
+
+            ExpressionType::Logical(expr) => {
+                let left = self.evaluate(&expr.left);
+                if expr.operator == TokenType::OR {
+                    if self.is_truthy(&left) {
+                        return left;
+                    }
+                } else {
+                    if !self.is_truthy(&left) {
+                        return left;
+                    }
+                }
+                return self.evaluate(&expr.right);
             }
 
             ExpressionType::Binary(expr) => {
@@ -128,7 +165,7 @@ impl Interpreter {
         a == b
     }
 
-    fn evaluate_statement(&mut self, statement: StatementType) {
+    fn evaluate_statement(&mut self, statement: &StatementType) {
         match statement {
             StatementType::ExpressionStatement(value) => {
                 self.evaluate(&value);
@@ -140,21 +177,21 @@ impl Interpreter {
             }
             StatementType::LetStatement(expr) => match *expr.initializer {
                 ExpressionType::Literal(Literal::Nil) => {
-                    self.storage.define(expr.name.lexeme, Literal::Nil)
+                    self.storage.define(expr.name.lexeme.clone(), Literal::Nil)
                 }
                 _ => {
                     let result = self.evaluate(&expr.initializer);
-                    self.storage.define(expr.name.lexeme, result)
+                    self.storage.define(expr.name.lexeme.clone(), result)
                 }
             },
             StatementType::BlockStatement(statements) => self.evaluate_blocks(statements),
+            StatementType::IfStatement(iftype) => self.evaluate_if(iftype),
+            StatementType::WhileStatement(wild) => self.evaluate_while(wild),
         }
     }
     pub fn interpreter(&mut self, statements: Vec<StatementType>) {
         for statement in statements {
-            self.evaluate_statement(statement);
+            self.evaluate_statement(&statement);
         }
     }
-
 }
-
