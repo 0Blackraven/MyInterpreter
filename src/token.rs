@@ -11,7 +11,7 @@ pub enum TokenType {
     BANG, BANGEQUAL,
     EQUAL, EQUALEQUAL,
     GREATER, GREATEREQUAL,
-    LESS, LESSEQUAL,MODULO,
+    LESS, LESSEQUAL,MODULO,DECREMENTOR,INCREMENTOR,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,
@@ -39,6 +39,8 @@ impl fmt::Display for TokenType {
             TokenType::GREATEREQUAL => ">=",
             TokenType::LESS => "<",
             TokenType::LESSEQUAL => "<=",
+            TokenType::DECREMENTOR => "--",
+            TokenType::INCREMENTOR => "++",
             _ => return write!(f, "{:?}", self), // fallback for non-operators
         };
 

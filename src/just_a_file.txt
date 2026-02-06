@@ -24,7 +24,7 @@ Unary	           ! -	       Right
 
 // this grammar solves the ambiguity and also precedence issues
 
-expression     → assignment;
+expression     → incrementdecerement | assignment;
 assignment     → identifier "=" assignment | logic_or;
 logic_or       → logic_and ("or" logic_and)*;
 logic_and      → equality ("and" equality)*;

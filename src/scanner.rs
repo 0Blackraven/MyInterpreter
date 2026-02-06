@@ -151,25 +151,6 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                     &mut token_lexeme,
                 );
             }
-            '-' => {
-                push_token(
-                    &mut tokens,
-                    Token::new(
-                        TokenType::MINUS,
-                        "-".to_string(),
-                        current_line,
-                        Literal::Nil,
-                    ),
-                    &mut token_lexeme,
-                );
-            }
-            '+' => {
-                push_token(
-                    &mut tokens,
-                    Token::new(TokenType::PLUS, "+".to_string(), current_line, Literal::Nil),
-                    &mut token_lexeme,
-                );
-            }
             ';' => {
                 push_token(
                     &mut tokens,
@@ -192,6 +173,62 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             }
 
             // one or two character tokens
+            '+' => {
+                if let Some(next_char) = char_iter.peek() {
+                    if next_char == &'+' {
+                        char_iter.next();
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::INCREMENTOR,
+                                "++".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    } else {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::PLUS,
+                                "+".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
+                }
+            }
+            '-' => {
+                if let Some(next_char) = char_iter.peek() {
+                    if next_char == &'-' {
+                        char_iter.next();
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::DECREMENTOR,
+                                "--".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    } else {
+                        push_token(
+                            &mut tokens,
+                            Token::new(
+                                TokenType::MINUS,
+                                "-".to_string(),
+                                current_line,
+                                Literal::Nil,
+                            ),
+                            &mut token_lexeme,
+                        );
+                    }
+                }
+            }
             '=' => {
                 if let Some(next_char) = char_iter.peek() {
                     if next_char == &'\0' {

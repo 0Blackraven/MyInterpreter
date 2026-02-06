@@ -3,6 +3,7 @@ use crate::{
     parser::{ExpressionType, IfType, StatementType, WhileType},
     token::{Literal, TokenType},
 };
+use core::panic;
 use std::mem::replace;
 
 pub struct Interpreter {
@@ -61,6 +62,31 @@ impl Interpreter {
                 let value: Literal = self.evaluate(&pookie.value);
                 self.storage.assign(pookie.name.lexeme.clone(), &value);
                 return value;
+            }
+
+            ExpressionType::Postfix(post) => {
+                match &*post.expr {
+                    ExpressionType::Variable(name) => {
+                        let current = self.storage.get(&name.lexeme);
+
+                        match (&post.operator, &current) {
+                            (TokenType::INCREMENTOR, Literal::Number(n)) => {
+                                self.storage
+                                    .assign(name.lexeme.clone(), &Literal::Number(n + 1.0));
+                                return Literal::Number(*n);
+                            }
+
+                            (TokenType::DECREMENTOR, Literal::Number(n)) => {
+                                self.storage
+                                    .assign(name.lexeme.clone(), &Literal::Number(n - 1.0));
+                                return Literal::Number(*n);
+                            }
+
+                            _ => panic!("++ / -- only allowed on numbers"),
+                        }
+                    }
+                    _ => panic!("Parser should not ever reach this"),
+                }
             }
 
             ExpressionType::Unary(expr) => {

@@ -11,6 +11,7 @@ pub enum ExpressionType {
     Grouping(Box<ExpressionType>),
     Variable(Token),
     Assignment(AssignExpression),
+    Postfix(PostfixExpression),
 }
 
 pub enum StatementType {
@@ -53,6 +54,11 @@ pub struct BinaryExpression {
 pub struct UnaryExpression {
     pub operator: TokenType,
     pub right: Box<ExpressionType>,
+}
+
+pub struct PostfixExpression {
+    pub operator: TokenType,
+    pub expr: Box<ExpressionType>,
 }
 pub struct Parser {
     tokens: Vec<Token>,
@@ -256,7 +262,8 @@ impl Parser {
     }
 
     fn expression(&mut self) -> ExpressionType {
-        return self.assignment();
+        let expr = self.assignment();
+        return expr;
     }
 
     fn assignment(&mut self) -> ExpressionType {
@@ -384,7 +391,24 @@ impl Parser {
                 right: Box::new(right),
             });
         }
-        return self.primary();
+        return self.postfix();
+    }
+
+    fn postfix(&mut self) -> ExpressionType {
+        let expr = self.primary();
+        if self.match_token(&[TokenType::INCREMENTOR, TokenType::DECREMENTOR]) {
+            match expr {
+                ExpressionType::Variable(_) => {
+                    let operator = self.previous().tokentype;
+                    return ExpressionType::Postfix(PostfixExpression {
+                        expr: Box::new(expr),
+                        operator,
+                    });
+                }
+                _ => panic!("Well hello there mate why u do (expr)++"),
+            }
+        }
+        return expr;
     }
 
     fn primary(&mut self) -> ExpressionType {
@@ -449,6 +473,7 @@ pub fn print_expr(expr: &ExpressionType) -> String {
             v.operator,
             print_expr(&v.right)
         ),
+        ExpressionType::Postfix(post) => format!("{} {}", print_expr(&post.expr), post.operator),
     }
 }
 
