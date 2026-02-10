@@ -1,11 +1,12 @@
 
-use crate::token::Literal;
+use crate::token::{Literal};
 use std::collections::HashMap;
+use std::rc::Rc;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Environment {
     pub enclosing : Option<Box<Environment>>,
-    variables : HashMap<String, Literal>
+    variables : HashMap<String, Rc<Literal>>
 }
 
 impl Environment {
@@ -16,12 +17,12 @@ impl Environment {
         }
     }
 
-    pub fn define (&mut self, name: String, value: Literal) {
+    pub fn define (&mut self, name: String, value: Rc<Literal>) {
         self.variables.insert(name, value);
     }
 
-    pub fn get (&self , name:&String) -> Literal {
-        let value_option = self.variables.get(name);
+    pub fn get (&self , name: &String) -> Rc<Literal> {
+        let value_option: Option<&Rc<Literal>> = self.variables.get(name);
         match value_option {
             Some(value) => return value.to_owned(),
             None => {
@@ -34,10 +35,10 @@ impl Environment {
         }
     }
 
-    pub fn assign (&mut self, name:String, value: &Literal){
+    pub fn assign (&mut self, name:String, value: Rc<Literal>){
         let x_result = self.variables.get_mut(&name);
         match x_result {
-            Some(x) => *x = value.clone(),
+            Some(x) => *x = value,
             None =>{
                 if let Some(enclosing) = &mut self.enclosing {
                     return enclosing.assign(name, value);

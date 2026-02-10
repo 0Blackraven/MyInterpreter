@@ -1,4 +1,4 @@
-use crate::token::{Literal, Token, TokenType};
+use crate::token::{Token, TokenType, AtomicLiteral};
 
 // problem : line 76 , 176
 // disclaimer: i will not use the generic way of rust here
@@ -7,8 +7,9 @@ pub enum ExpressionType {
     Binary(BinaryExpression),
     Logical(BinaryExpression),
     Unary(UnaryExpression),
-    Literal(Literal),
+    Literal(AtomicLiteral),
     Grouping(Box<ExpressionType>),
+    Call(CallArgs),
     Variable(Token),
     Assignment(AssignExpression),
     Postfix(PostfixExpression),
@@ -27,6 +28,12 @@ pub enum StatementType {
 pub struct WhileType {
     pub condition: ExpressionType,
     pub statement: Box<StatementType>,
+}
+
+pub struct CallArgs {
+    pub callee: Box<ExpressionType>,
+    pub paren: Token,
+    pub args: Vec<Box<ExpressionType>>
 }
 
 pub struct IfType {
@@ -136,7 +143,7 @@ impl Parser {
 
     fn var_declaration(&mut self) -> StatementType {
         let name = self.consume(TokenType::IDENTIFIER, "Expected a identifier here");
-        let mut initializer: ExpressionType = ExpressionType::Literal(Literal::Nil);
+        let mut initializer: ExpressionType = ExpressionType::Literal(AtomicLiteral::Nil);
         if self.match_token(&[TokenType::EQUAL]) {
             initializer = self.expression();
         }
@@ -165,13 +172,13 @@ impl Parser {
 
     fn for_statement(&mut self) -> StatementType {
         self.consume(TokenType::LEFTPAREN, "expected a (");
-        let mut initializer: Option<StatementType> = None;
+        let mut _initializer: Option<StatementType> = None;
         if self.match_token(&[TokenType::SEMICOLON]) {
-            initializer = None;
+            _initializer = None;
         } else if self.check_token(&TokenType::LET) {
-            initializer = Some(self.declaration());
+            _initializer = Some(self.declaration());
         } else {
-            initializer = Some(self.expression_statement());
+            _initializer = Some(self.expression_statement());
         }
 
         let mut condition: Option<ExpressionType> = None;
@@ -195,14 +202,14 @@ impl Parser {
         }
 
         if condition.is_none() {
-            condition = Some(ExpressionType::Literal(Literal::Bool(true)));
+            condition = Some(ExpressionType::Literal(AtomicLiteral::Bool(true)));
         }
         body = StatementType::WhileStatement(WhileType {
             condition: condition.unwrap(),
             statement: Box::new(body),
         });
 
-        if let Some(initializer_result) = initializer {
+        if let Some(initializer_result) = _initializer {
             let args: Vec<StatementType> = vec![initializer_result, body];
             body = StatementType::BlockStatement(args);
         }
@@ -259,6 +266,26 @@ impl Parser {
         let expr = self.expression();
         self.consume(TokenType::SEMICOLON, "Expect ';' after expression.");
         return StatementType::ExpressionStatement(expr);
+    }
+
+    fn finish_call (&mut self, callee:ExpressionType) -> ExpressionType {
+        let mut arguments: Vec<Box<ExpressionType>> = Vec::new();
+        if !self.check_token(&TokenType::RIGHTPAREN) {
+            arguments.push(Box::new(self.expression()));
+            while self.match_token(&[TokenType::COMMA]) {
+                if arguments.len() >= 255 {
+                    self.peek();
+                    panic!("Sorry not allowed so many args");
+                } 
+                arguments.push(Box::new(self.expression()));
+            }
+        }
+        let paren = self.consume(TokenType::RIGHTPAREN, "hello there");
+        return ExpressionType::Call(CallArgs { 
+            callee: Box::new(callee), 
+            paren, 
+            args: arguments
+        });
     }
 
     fn expression(&mut self) -> ExpressionType {
@@ -395,7 +422,18 @@ impl Parser {
     }
 
     fn postfix(&mut self) -> ExpressionType {
-        let expr = self.primary();
+        let mut expr = self.primary();
+
+        if self.check_token(&TokenType::LEFTPAREN) {
+            loop {
+                if self.match_token(&[TokenType::LEFTPAREN]) {
+                    expr = self.finish_call(expr);
+                } else {
+                    break;
+                }
+            }
+            return expr;
+        }
         if self.match_token(&[TokenType::INCREMENTOR, TokenType::DECREMENTOR]) {
             match expr {
                 ExpressionType::Variable(_) => {
@@ -414,17 +452,17 @@ impl Parser {
     fn primary(&mut self) -> ExpressionType {
         let expr: ExpressionType;
         if self.match_token(&[TokenType::FALSE]) {
-            expr = ExpressionType::Literal(Literal::Bool(false));
+            expr = ExpressionType::Literal(AtomicLiteral::Bool(false));
         } else if self.match_token(&[TokenType::TRUE]) {
-            expr = ExpressionType::Literal(Literal::Bool(true));
+            expr = ExpressionType::Literal(AtomicLiteral::Bool(true));
         } else if self.match_token(&[TokenType::NIL]) {
-            expr = ExpressionType::Literal(Literal::Nil);
+            expr = ExpressionType::Literal(AtomicLiteral::Nil);
         } else if self.match_token(&[TokenType::NUMBER]) {
-            expr = ExpressionType::Literal(Literal::Number(
+            expr = ExpressionType::Literal(AtomicLiteral::Number(
                 self.previous().literal().parse().unwrap(),
             ));
         } else if self.match_token(&[TokenType::STRING]) {
-            expr = ExpressionType::Literal(Literal::String(self.previous().literal().clone()));
+            expr = ExpressionType::Literal(AtomicLiteral::String(self.previous().literal().clone()));
         } else if self.match_token(&[TokenType::LEFTPAREN]) {
             let expr = self.expression();
             self.consume(TokenType::RIGHTPAREN, "Expect ')' after expression.");
@@ -454,10 +492,10 @@ pub fn print_expr(expr: &ExpressionType) -> String {
         ExpressionType::Grouping(expr) => format!("(group {})", print_expr(expr),),
 
         ExpressionType::Literal(lit) => match lit {
-            Literal::Number(n) => n.to_string(),
-            Literal::String(s) => s.clone(),
-            Literal::Bool(b) => b.to_string(),
-            Literal::Nil => "nil".to_string(),
+                AtomicLiteral::Number(n) => n.to_string(),
+                AtomicLiteral::String(s) => s.clone(),
+                AtomicLiteral::Bool(b) => b.to_string(),
+                AtomicLiteral::Nil => "nil".to_string(),
         },
         ExpressionType::Variable(token) => format!(
             "{} {} {} {} ",
@@ -474,6 +512,12 @@ pub fn print_expr(expr: &ExpressionType) -> String {
             print_expr(&v.right)
         ),
         ExpressionType::Postfix(post) => format!("{} {}", print_expr(&post.expr), post.operator),
+        ExpressionType::Call(called) => format!(
+            "{} {}",
+            print_expr(&called.callee),
+            called.paren.lexeme,
+        )
+
     }
 }
 

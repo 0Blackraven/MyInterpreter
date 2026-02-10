@@ -32,20 +32,25 @@ equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ("/" | "*") unary )* ;
-unary          → ("!" | "-") unary | primary ;
+unary          → ("!" | "-") unary | postfix ;
+postfix        → primary ("++" | "--")? | "(" arguments ")" ;
+arguments      → expression ("," expression)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | identifier ;
 
 // new addition to flow 
 
-program -> (declaration)* EOF ;
-declaration -> letStatement | statement ;
-letStatement -> "let" identifier "=" expression;
-statement -> expressionStatement | printStatement | block | ifStatement | whileStatement | forStatement ;
-expressionStatement -> expression ";" ;
-printStatement -> print expression ";" ;
-block -> "{" declaration* "}" ;
-ifStatement -> comparison , statement + statement ; 
-whileStatement -> "while" "(" expression ")" statement ;
-forStatement -> "for" "(" ( varDecl | exprStmt | ";" )
-                 expression? ";"
-                 expression? ")" statement ;
+program                → (declaration)* EOF ;
+declaration            → letDeclaration | statement| fnDeclaration ;
+fnDeclaration          → "fn" function;
+function               → identifier "(" parameters? ")" block ;
+parameters             → identifier ("," identifier)* ;
+letDeclaration         → "let" identifier "=" expression;
+statement              → expressionStatement | printStatement | block | ifStatement | whileStatement | forStatement ;
+expressionStatement    → expression ";" ;
+printStatement         → print expression ";" ;
+block                  → "{" declaration* "}" ;
+ifStatement            → comparison , statement + statement ; 
+whileStatement         → "while" "(" expression ")" statement ;
+forStatement           → "for" "(" ( varDecl | exprStmt | ";" )
+                         expression? ";"
+                         expression? ")" statement ;

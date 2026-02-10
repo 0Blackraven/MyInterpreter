@@ -1,4 +1,4 @@
-use crate::token::{Literal, Token, TokenType};
+use crate::token::{AtomicLiteral, Token, TokenType};
 use std::io::Result;
 
 const _KEYWORDS: [&str; 16] = [
@@ -75,7 +75,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '.' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::DOT, ".".to_string(), current_line, Literal::Nil),
+                    Token::new(TokenType::DOT, ".".to_string(), current_line, AtomicLiteral::Nil),
                     &mut token_lexeme,
                 );
             }
@@ -86,7 +86,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::LEFTBRACE,
                         "{".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -98,7 +98,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::MODULO,
                         "%".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -110,7 +110,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::RIGHTBRACE,
                         "}".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -122,7 +122,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::LEFTPAREN,
                         "(".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -134,7 +134,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::RIGHTPAREN,
                         ")".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -146,7 +146,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::COMMA,
                         ",".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -158,7 +158,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::SEMICOLON,
                         ";".to_string(),
                         current_line,
-                        Literal::Nil,
+                        AtomicLiteral::Nil,
                     ),
                     &mut token_lexeme,
                 );
@@ -167,7 +167,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '*' => {
                 push_token(
                     &mut tokens,
-                    Token::new(TokenType::STAR, "*".to_string(), current_line, Literal::Nil),
+                    Token::new(TokenType::STAR, "*".to_string(), current_line, AtomicLiteral::Nil),
                     &mut token_lexeme,
                 );
             }
@@ -183,7 +183,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::INCREMENTOR,
                                 "++".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -194,7 +194,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::PLUS,
                                 "+".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -211,7 +211,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::DECREMENTOR,
                                 "--".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -222,7 +222,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::MINUS,
                                 "-".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -241,7 +241,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::EQUALEQUAL,
                                 "==".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -252,7 +252,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::EQUAL,
                                 "=".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -271,7 +271,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::AND,
                                 "&&".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -290,7 +290,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::OR,
                                 "||".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -309,7 +309,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::GREATEREQUAL,
                                 ">=".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -320,7 +320,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::GREATER,
                                 ">".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -339,7 +339,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::LESSEQUAL,
                                 "<=".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -350,7 +350,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::LESS,
                                 "<".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -369,7 +369,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::BANGEQUAL,
                                 "!=".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -380,7 +380,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::BANG,
                                 "!".to_string(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -403,7 +403,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                             TokenType::SLASH,
                             "/".to_string(),
                             current_line,
-                            Literal::Nil,
+                            AtomicLiteral::Nil,
                         ),
                         &mut token_lexeme,
                     );
@@ -415,7 +415,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         break;
                     }
                     if next_char == '\0' {
-                        // give out error that unexpected end of file in string literal
+                        // give out error that unexpected end of file in string AtomicLiteral
                     }
                     if next_char == '\n' {
                         current_line += 1;
@@ -428,7 +428,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         TokenType::STRING,
                         token_lexeme.clone(),
                         current_line,
-                        Literal::String(token_lexeme.clone()),
+                        AtomicLiteral::String(token_lexeme.clone()),
                     ),
                     &mut token_lexeme,
                 );
@@ -446,7 +446,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                 let num_result = token_lexeme.parse::<f32>();
                 match num_result {
                     Err(_) => {
-                        // give out error that number literal could not be parsed
+                        // give out error that number AtomicLiteral could not be parsed
                     }
                     Ok(num) => {
                         push_token(
@@ -455,7 +455,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 TokenType::NUMBER,
                                 token_lexeme.clone(),
                                 current_line,
-                                Literal::Number(num),
+                                AtomicLiteral::Number(num),
                             ),
                             &mut token_lexeme,
                         );
@@ -481,7 +481,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 _match_keyword(&token_lexeme),
                                 token_lexeme.clone(),
                                 current_line,
-                                Literal::Bool(true),
+                                AtomicLiteral::Bool(true),
                             ),
                             &mut token_lexeme,
                         )
@@ -492,7 +492,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 _match_keyword(&token_lexeme),
                                 token_lexeme.clone(),
                                 current_line,
-                                Literal::Bool(false),
+                                AtomicLiteral::Bool(false),
                             ),
                             &mut token_lexeme,
                         )
@@ -503,7 +503,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                                 _match_keyword(&token_lexeme),
                                 token_lexeme.clone(),
                                 current_line,
-                                Literal::Nil,
+                                AtomicLiteral::Nil,
                             ),
                             &mut token_lexeme,
                         );
@@ -515,7 +515,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                             TokenType::IDENTIFIER,
                             token_lexeme.clone(),
                             current_line,
-                            Literal::Nil,
+                            AtomicLiteral::Nil,
                         ),
                         &mut token_lexeme,
                     );
@@ -533,7 +533,7 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
         TokenType::EOF,
         "".to_string(),
         current_line,
-        Literal::Nil,
+        AtomicLiteral::Nil,
     ));
     Ok(tokens)
 }

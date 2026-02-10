@@ -4,6 +4,7 @@ mod token;
 mod parser;
 mod environment;
 mod interpreter;
+mod callable;
 use terminal_reader::terminal_reader;
 
 

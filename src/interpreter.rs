@@ -1,10 +1,12 @@
 use crate::{
     environment::Environment,
     parser::{ExpressionType, IfType, StatementType, WhileType},
-    token::{Literal, TokenType},
+    token::{Literal, TokenType, AtomicLiteral},
 };
 use core::panic;
 use std::mem::replace;
+use std::rc::Rc;
+// use crate::callable::Callable;
 
 pub struct Interpreter {
     storage: Environment,
@@ -50,36 +52,52 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&mut self, expr: &ExpressionType) -> Literal {
+    fn evaluate(&mut self, expr: &ExpressionType) -> Rc<Literal> {
         match expr {
-            ExpressionType::Literal(value) => value.clone(),
+            ExpressionType::Literal(value) => Rc::new(Literal::Basic(value.clone())),
 
             ExpressionType::Grouping(expr) => self.evaluate(expr),
 
             ExpressionType::Variable(name) => self.storage.get(&name.lexeme),
 
             ExpressionType::Assignment(pookie) => {
-                let value: Literal = self.evaluate(&pookie.value);
-                self.storage.assign(pookie.name.lexeme.clone(), &value);
+                let value:Rc<Literal>  = self.evaluate(&pookie.value);
+                self.storage.assign(pookie.name.lexeme.clone(), value.clone());
                 return value;
             }
 
+            ExpressionType::Call(called) => {
+                let callee = self.evaluate(&called.callee);
+                let mut args: Vec<Rc<Literal>> = Vec::new();
+                for arg in &called.args {
+                    args.push(self.evaluate(&*arg));
+                }
+
+                match callee.as_ref() {
+                    Literal::LoxCallable(function ) => {
+                        return function.call(self,args);
+                    },
+                    _ => {
+                        panic!("should not reach here")
+                    }
+                }
+            }
             ExpressionType::Postfix(post) => {
                 match &*post.expr {
                     ExpressionType::Variable(name) => {
                         let current = self.storage.get(&name.lexeme);
 
-                        match (&post.operator, &current) {
-                            (TokenType::INCREMENTOR, Literal::Number(n)) => {
+                        match (&post.operator, &*current) {
+                            (TokenType::INCREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
                                 self.storage
-                                    .assign(name.lexeme.clone(), &Literal::Number(n + 1.0));
-                                return Literal::Number(*n);
+                                    .assign(name.lexeme.clone(), Rc::new(Literal::Basic(AtomicLiteral::Number(n + 1.0))));
+                                return Rc::new(Literal::Basic(AtomicLiteral::Number(*n)));
                             }
 
-                            (TokenType::DECREMENTOR, Literal::Number(n)) => {
+                            (TokenType::DECREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
                                 self.storage
-                                    .assign(name.lexeme.clone(), &Literal::Number(n - 1.0));
-                                return Literal::Number(*n);
+                                    .assign(name.lexeme.clone(), Rc::new(Literal::Basic(AtomicLiteral::Number(n - 1.0))));
+                                return Rc::new(Literal::Basic(AtomicLiteral::Number(*n)));
                             }
 
                             _ => panic!("++ / -- only allowed on numbers"),
@@ -94,13 +112,13 @@ impl Interpreter {
 
                 match expr.operator {
                     TokenType::MINUS => {
-                        if let Literal::Number(n) = right {
-                            Literal::Number(-n)
+                        if let Literal::Basic(AtomicLiteral::Number(n)) = *right {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(-n)))
                         } else {
                             panic!("Operand must be a number.");
                         }
                     }
-                    TokenType::BANG => Literal::Bool(!self.is_truthy(&right)),
+                    TokenType::BANG => Rc::new(Literal::Basic(AtomicLiteral::Bool(!self.is_truthy(&right)))),
                     _ => unreachable!(),
                 }
             }
@@ -124,56 +142,78 @@ impl Interpreter {
                 let right = self.evaluate(&expr.right);
 
                 match expr.operator {
-                    TokenType::PLUS => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Number(a + b),
-                        (Literal::String(a), Literal::String(b)) => Literal::String(a + &b),
-                        (Literal::String(a), Literal::Number(b)) => {
-                            Literal::String(a + &b.to_string())
+                    TokenType::PLUS => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(a + b)))
+                        },
+                        (Literal::Basic(AtomicLiteral::String(a)), Literal::Basic(AtomicLiteral::String(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::String(a.to_string() + b)))
+                        },
+                        (Literal::Basic(AtomicLiteral::String(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::String(b.to_string() + a)))
                         }
-                        (Literal::Number(a), Literal::String(b)) => {
-                            Literal::String(a.to_string() + &b)
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::String(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::String(a.to_string() + &b)))
                         }
                         _ => panic!("Operands must be two numbers or two strings."),
                     },
 
-                    TokenType::MODULO => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Number(a % b),
+                    TokenType::MODULO => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(a % b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
 
-                    TokenType::MINUS => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Number(a - b),
+                    TokenType::MINUS => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(a - b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
 
-                    TokenType::STAR => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Number(a * b),
+                    TokenType::STAR => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(a * b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::SLASH => match (left, right) {
-                        (Literal::Number(0.0), Literal::Number(0.0)) => panic!("Division by zero."),
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Number(a / b),
+                    TokenType::SLASH => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(_)), Literal::Basic(AtomicLiteral::Number(0.0))) => {
+                            panic!("Division by zero.")
+                        },
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Number(a / b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::GREATER => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Bool(a > b),
+                    TokenType::GREATER => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Bool(a > b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::GREATEREQUAL => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Bool(a >= b),
+                    TokenType::GREATEREQUAL => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Bool(a >= b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::LESS => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Bool(a < b),
+                    TokenType::LESS => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Bool(a < b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::LESSEQUAL => match (left, right) {
-                        (Literal::Number(a), Literal::Number(b)) => Literal::Bool(a <= b),
+                    TokenType::LESSEQUAL => match (left.as_ref(), right.as_ref()) {
+                        (Literal::Basic(AtomicLiteral::Number(a)), Literal::Basic(AtomicLiteral::Number(b))) => {
+                            Rc::new(Literal::Basic(AtomicLiteral::Bool(a <= b)))
+                        },
                         _ => panic!("Operands must be numbers."),
                     },
-                    TokenType::EQUALEQUAL => Literal::Bool(self.is_equal(&left, &right)),
-                    TokenType::BANGEQUAL => Literal::Bool(!self.is_equal(&left, &right)),
-                    _ => Literal::Nil, // should not reach here
+                    TokenType::EQUALEQUAL => Rc::new(Literal::Basic(AtomicLiteral::Bool(self.is_equal(&left, &right)))),
+                    TokenType::BANGEQUAL => Rc::new(Literal::Basic(AtomicLiteral::Bool(!self.is_equal(&left, &right)))),
+                    _ => Rc::new(Literal::Basic(AtomicLiteral::Nil)), // should not reach here
                 }
             }
         }
@@ -181,14 +221,17 @@ impl Interpreter {
 
     fn is_truthy(&self, value: &Literal) -> bool {
         match value {
-            Literal::Nil => false,
-            Literal::Bool(false) => false,
+            Literal::Basic(AtomicLiteral::Nil) => false,
+            Literal::Basic(AtomicLiteral::Bool(false)) => false,
             _ => true,
         }
     }
 
     fn is_equal(&self, a: &Literal, b: &Literal) -> bool {
-        a == b
+        match (a,b) {
+            (Literal::Basic(a), Literal::Basic(b)) => return a == b,
+            _ => panic!("not possible to compare callables")
+        }
     }
 
     fn evaluate_statement(&mut self, statement: &StatementType) {
@@ -202,8 +245,8 @@ impl Interpreter {
                 println!("{}", output);
             }
             StatementType::LetStatement(expr) => match *expr.initializer {
-                ExpressionType::Literal(Literal::Nil) => {
-                    self.storage.define(expr.name.lexeme.clone(), Literal::Nil)
+                ExpressionType::Literal(AtomicLiteral::Nil) => {
+                    self.storage.define(expr.name.lexeme.clone(), Rc::new(Literal::Basic(AtomicLiteral::Nil)))
                 }
                 _ => {
                     let result = self.evaluate(&expr.initializer);

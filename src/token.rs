@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::callable::Callable;
+
 #[derive(Debug,Clone,PartialEq)]
 pub enum TokenType {
     // single char tokens
@@ -48,31 +50,40 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Clone,PartialEq)]
 #[allow(dead_code)]
-pub enum Literal {
+
+pub enum AtomicLiteral {
     String(String),
     Number(f32),
     Bool(bool),
     Nil,
 }
+pub enum Literal {
+    Basic(AtomicLiteral),
+    LoxCallable(Box<dyn Callable>)
+}
 
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Literal::String(s) => write!(f, "{}", s),
-            Literal::Number(n) => write!(f, "{}", n),
-            Literal::Bool(b) => write!(f, "{}", b),
-            Literal::Nil => write!(f, "nil"),
+            Literal::Basic(atom) => match atom {
+                AtomicLiteral::String(s) => write!(f, "{}", s),
+                AtomicLiteral::Number(n) => write!(f, "{}", n),
+                AtomicLiteral::Bool(b) => write!(f, "{}", b),
+                AtomicLiteral::Nil => write!(f, "nil"),
+            },
+            Literal::LoxCallable(_) => write!(f, "<fn>"),
         }
     }
 }
+
 
 #[derive(Clone)]
 pub struct Token {
     pub tokentype: TokenType,
     pub lexeme: String,
-    pub literal: Option<Literal>,
+    pub literal: Option<AtomicLiteral>,
     pub line: u32,
 }
 impl Token {
@@ -81,9 +92,9 @@ impl Token {
         match literal_result {
             Some(value) => {
                 match value {
-                    Literal::String(value ) => return value,
-                    Literal::Number(value) => return value.to_string(),
-                    Literal::Bool(value) => return value.to_string(),
+                    AtomicLiteral::String(value ) => return value,
+                    AtomicLiteral::Number(value) => return value.to_string(),
+                    AtomicLiteral::Bool(value) => return value.to_string(),
                     _ => return String::from("not a good thing")
                 }
             }
@@ -92,16 +103,15 @@ impl Token {
             }
         }
     }
-    #[allow(dead_code)]
-    pub fn new(tokentype: TokenType, lexeme: String, line: u32, literal:Literal) -> Self {
+    pub fn new(tokentype: TokenType, lexeme: String, line: u32, literal:AtomicLiteral) -> Self {
         match literal {
-            Literal::String(_) | Literal::Number(_) | Literal::Bool(_) => Token {
+            AtomicLiteral::String(_) | AtomicLiteral::Number(_) | AtomicLiteral::Bool(_) => Token {
                 tokentype,
                 lexeme,
                 literal: Some(literal),
                 line,
             },
-            Literal::Nil => Token {
+            AtomicLiteral::Nil => Token {
                 tokentype,
                 lexeme,
                 literal: None,
