@@ -18,14 +18,24 @@ pub enum ExpressionType {
 pub enum StatementType {
     ExpressionStatement(ExpressionType),
     PrintStatement(ExpressionType),
-    LetStatement(LetExpressionType),
+    LetStatement(LetExpressionProps),
     BlockStatement(Vec<StatementType>),
-    IfStatement(IfType),
-    WhileStatement(WhileType),
+    IfStatement(IfProps),
+    Function(FunctionProps),
+    WhileStatement(WhileProps),
     // ForStatement()
 }
 
-pub struct WhileType {
+pub enum FunctionType {
+    Function,
+    Method
+}
+pub struct FunctionProps {
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Box<StatementType>
+}
+pub struct WhileProps {
     pub condition: ExpressionType,
     pub statement: Box<StatementType>,
 }
@@ -36,7 +46,7 @@ pub struct CallArgs {
     pub args: Vec<Box<ExpressionType>>
 }
 
-pub struct IfType {
+pub struct IfProps {
     pub comparison: ExpressionType,
     pub ifcase: Box<StatementType>,
     pub elsecase: Option<Box<StatementType>>,
@@ -47,7 +57,7 @@ pub struct AssignExpression {
     pub value: Box<ExpressionType>,
 }
 
-pub struct LetExpressionType {
+pub struct LetExpressionProps {
     pub name: Token,
     pub initializer: Box<ExpressionType>,
 }
@@ -137,8 +147,30 @@ impl Parser {
     fn declaration(&mut self) -> StatementType {
         if self.match_token(&[TokenType::LET]) {
             return self.var_declaration();
+        } else if self.match_token(&[TokenType::FUNCTION]) {
+            return self.function_declaration(FunctionType::Function);
         }
         return self.statement();
+    }
+
+    fn function_declaration(&mut self, _func_type: FunctionType) -> StatementType {
+        let name = self.consume(TokenType::IDENTIFIER, "exprected identifier");
+        self.consume(TokenType::LEFTPAREN, "expected a (");
+        let mut tokens : Vec<Token> = Vec::new();
+        if !self.check_token(&TokenType::RIGHTPAREN) {
+            tokens.push(self.consume(TokenType::IDENTIFIER, "expected a identifier for arguments"));
+            while self.match_token(&[TokenType::COMMA]) {
+                tokens.push(self.consume(TokenType::IDENTIFIER, "expected a identifier for arguments"));
+            }
+        }
+        self.consume(TokenType::RIGHTPAREN, "expected a ) at the end of arguments");
+        self.consume(TokenType::LEFTBRACE, "expected { at the start of body");
+        let body = self.block_statement();
+        return StatementType::Function(FunctionProps { 
+            name, 
+            params: tokens, 
+            body: Box::new(body) 
+        })
     }
 
     fn var_declaration(&mut self) -> StatementType {
@@ -148,7 +180,7 @@ impl Parser {
             initializer = self.expression();
         }
         self.consume(TokenType::SEMICOLON, "Expected ; at the end");
-        return StatementType::LetStatement(LetExpressionType {
+        return StatementType::LetStatement(LetExpressionProps {
             name: name,
             initializer: Box::new(initializer),
         });
@@ -204,7 +236,7 @@ impl Parser {
         if condition.is_none() {
             condition = Some(ExpressionType::Literal(AtomicLiteral::Bool(true)));
         }
-        body = StatementType::WhileStatement(WhileType {
+        body = StatementType::WhileStatement(WhileProps {
             condition: condition.unwrap(),
             statement: Box::new(body),
         });
@@ -222,7 +254,7 @@ impl Parser {
         let condition = self.expression();
         self.consume(TokenType::RIGHTPAREN, "expected )");
         let statement = self.statement();
-        return StatementType::WhileStatement(WhileType {
+        return StatementType::WhileStatement(WhileProps {
             statement: Box::new(statement),
             condition: condition,
         });
@@ -239,7 +271,7 @@ impl Parser {
             let temp = self.statement();
             elsecase = Some(Box::new(temp));
         }
-        return StatementType::IfStatement(IfType {
+        return StatementType::IfStatement(IfProps {
             comparison,
             ifcase: Box::new(ifcase),
             elsecase: elsecase,
@@ -397,7 +429,7 @@ impl Parser {
     fn factor(&mut self) -> ExpressionType {
         let mut expr = self.unary();
 
-        while self.match_token(&[TokenType::STAR, TokenType::SLASH]) {
+        while self.match_token(&[TokenType::STAR, TokenType::SLASH, TokenType::MODULO]) {
             let operator = self.previous().tokentype;
             let right: ExpressionType = self.unary();
             expr = ExpressionType::Binary(BinaryExpression {

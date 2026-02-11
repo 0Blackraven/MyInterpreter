@@ -5,6 +5,8 @@ mod parser;
 mod environment;
 mod interpreter;
 mod callable;
+mod clock;
+mod loxfuncs;
 use terminal_reader::terminal_reader;
 
 

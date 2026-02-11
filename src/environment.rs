@@ -1,16 +1,16 @@
 
 use crate::token::{Literal};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-// #[derive(Clone)]
 pub struct Environment {
-    pub enclosing : Option<Box<Environment>>,
+    pub enclosing : Option<Rc<RefCell<Environment>>>,
     variables : HashMap<String, Rc<Literal>>
 }
 
 impl Environment {
-    pub fn new (enclosing: Option<Box<Environment>>) -> Self {
+    pub fn new (enclosing: Option<Rc<RefCell<Environment>>>) -> Self {
         Self {
             enclosing: enclosing,
             variables: HashMap::new(),
@@ -27,7 +27,7 @@ impl Environment {
             Some(value) => return value.to_owned(),
             None => {
                 if let Some(enclosing) = &self.enclosing {
-                    return enclosing.get(name);
+                    return enclosing.borrow().get(name);
                 } else {
                     panic!("not found variable get method {}", name);
                 }
@@ -41,7 +41,7 @@ impl Environment {
             Some(x) => *x = value,
             None =>{
                 if let Some(enclosing) = &mut self.enclosing {
-                    return enclosing.assign(name, value);
+                    return enclosing.borrow_mut().assign(name, value);
                 } else {
                     panic!("variable not defined {}", name);
                 }

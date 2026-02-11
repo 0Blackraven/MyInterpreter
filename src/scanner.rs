@@ -20,7 +20,7 @@ fn _match_keyword(input: &str) -> TokenType {
         "class" => TokenType::CLASS,
         "else" => TokenType::ELSE,
         "false" => TokenType::FALSE,
-        "func" => TokenType::FUNCTION,
+        "fn" => TokenType::FUNCTION,
         "for" => TokenType::FOR,
         "if" => TokenType::IF,
         "null" => TokenType::NIL,
