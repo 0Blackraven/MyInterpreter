@@ -2,7 +2,7 @@ use crate::token::{AtomicLiteral, Token, TokenType};
 use std::io::Result;
 
 const _KEYWORDS: [&str; 16] = [
-    "and", "class", "else", "false", "func", "for", "if", "null", "or", "print", "return", "super",
+    "and", "class", "else", "false", "fn", "for", "if", "null", "or", "print", "return", "super",
     "this", "true", "let", "while",
 ];
 

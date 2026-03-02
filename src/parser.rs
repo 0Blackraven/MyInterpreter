@@ -1,4 +1,5 @@
 use crate::token::{Token, TokenType, AtomicLiteral};
+use std::rc::Rc;
 
 // problem : line 76 , 176
 // disclaimer: i will not use the generic way of rust here
@@ -23,6 +24,7 @@ pub enum StatementType {
     IfStatement(IfProps),
     Function(FunctionProps),
     WhileStatement(WhileProps),
+    ReturnStatement(ReturnProps),
     // ForStatement()
 }
 
@@ -30,10 +32,15 @@ pub enum FunctionType {
     Function,
     Method
 }
+
+pub struct ReturnProps {
+    keyword: Token,
+    pub value: AtomicLiteral
+}
 pub struct FunctionProps {
     pub name: Token,
     pub params: Vec<Token>,
-    pub body: Box<StatementType>
+    pub body: Rc<StatementType>
 }
 pub struct WhileProps {
     pub condition: ExpressionType,
@@ -169,7 +176,7 @@ impl Parser {
         return StatementType::Function(FunctionProps { 
             name, 
             params: tokens, 
-            body: Box::new(body) 
+            body: Rc::new(body) 
         })
     }
 
@@ -186,6 +193,22 @@ impl Parser {
         });
     }
 
+    fn return_statement(&mut self) -> StatementType {
+        let keyword = self.previous();
+        let mut value: AtomicLiteral = AtomicLiteral::Nil;
+        if !self.check_token(&TokenType::SEMICOLON) {
+            value = match self.expression() {
+                ExpressionType::Literal(lit) => lit,
+                _ => panic!("Only literal values can be returned for now"),
+            }
+        }
+        self.consume(TokenType::SEMICOLON, "Expected ; after return value");
+        return StatementType::ReturnStatement(ReturnProps {
+            keyword,
+            value
+        });
+    }
+
     fn statement(&mut self) -> StatementType {
         if self.match_token(&[TokenType::PRINT]) {
             return self.print_statement();
@@ -197,6 +220,8 @@ impl Parser {
             return self.while_statement();
         } else if self.match_token(&[TokenType::FOR]) {
             return self.for_statement();
+        }else if self.match_token(&[TokenType::RETURN]){
+            return self.return_statement();
         } else {
             return self.expression_statement();
         }

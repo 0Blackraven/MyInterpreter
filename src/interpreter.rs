@@ -1,10 +1,10 @@
+use crate::loxfuncs::LoxFunction;
 use crate::parser::{ExpressionType, IfProps, StatementType, WhileProps};
 use crate::token::{AtomicLiteral, Literal, TokenType};
 use crate::{clock::Clock, environment::Environment};
 use core::panic;
 use std::cell::RefCell;
 use std::rc::Rc;
-// use crate::callable::Callable;
 
 pub struct Interpreter {
     pub storage: Rc<RefCell<Environment>>,
@@ -34,7 +34,11 @@ impl Interpreter {
         self.storage = previous;
     }
 
-    pub fn evaluate_func_block (&mut self, statement: &StatementType, closure: Rc<RefCell<Environment>>) {
+    pub fn evaluate_func_block(
+        &mut self,
+        statement: &StatementType,
+        closure: Rc<RefCell<Environment>>,
+    ) {
         let previous = Rc::clone(&self.storage);
 
         self.storage = closure;
@@ -77,7 +81,9 @@ impl Interpreter {
 
             ExpressionType::Assignment(pookie) => {
                 let value: Rc<Literal> = self.evaluate(&pookie.value);
-                self.storage.borrow_mut().assign(pookie.name.lexeme.clone(), value.clone());
+                self.storage
+                    .borrow_mut()
+                    .assign(pookie.name.lexeme.clone(), value.clone());
                 return value;
             }
 
@@ -176,7 +182,7 @@ impl Interpreter {
                         (
                             Literal::Basic(AtomicLiteral::String(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Rc::new(Literal::Basic(AtomicLiteral::String(b.to_string() + a))),
+                        ) => Rc::new(Literal::Basic(AtomicLiteral::String(a.to_owned() + &b.to_string()))),
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::String(b)),
@@ -291,14 +297,21 @@ impl Interpreter {
                 ),
                 _ => {
                     let result = self.evaluate(&expr.initializer);
-                    self.storage.borrow_mut().define(expr.name.lexeme.clone(), result)
+                    self.storage
+                        .borrow_mut()
+                        .define(expr.name.lexeme.clone(), result)
                 }
             },
-            StatementType::BlockStatement(statements) => {
-                self.evaluate_blocks( statements)
-            },
+            StatementType::BlockStatement(statements) => self.evaluate_blocks(statements),
             StatementType::IfStatement(iftype) => self.evaluate_if(iftype),
             StatementType::WhileStatement(wild) => self.evaluate_while(wild),
+            StatementType::Function(func_props) => {
+                let function = LoxFunction::new(Rc::new(func_props), self);
+                self.storage.borrow_mut().define(
+                    func_props.name.lexeme.clone(),
+                    Rc::new(Literal::LoxCallable(Box::new(function))),
+                );
+            } 
             _ => {}
         }
     }
