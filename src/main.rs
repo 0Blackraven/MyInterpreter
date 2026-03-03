@@ -11,10 +11,6 @@ mod loxfuncs;
 use terminal_reader::terminal_reader;
 use lox_error::{LoxResult};
 
-
-// improve error reporting to accommodate different error showing mechanisms like simple print to console, logging to file, etc.
-// replace all panic! calls with proper error handling mechanisms.
-
 fn execute_error(line: u32, message: &str) {
     eprintln!("Error at line {}: {}", line, message);
 }
@@ -25,14 +21,12 @@ fn main() {
     match input {
         Ok(result) => {
             if let Err(e) = run(&result) {
-                eprintln!("{}", e);
+                eprintln!("{}", e)
             }
         }
         Err(e) => execute_error(0, &format!("Scanner error: {}", e)),
     }
-    
-    // loop {
-    // }
+
 }
 
 fn run(source: &str) -> LoxResult<()> {

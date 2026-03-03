@@ -44,10 +44,10 @@ impl Interpreter {
     
         self.storage = closure;
     
-        self.evaluate_statement(statement)?;
+        let result = self.evaluate_statement(statement);
     
         self.storage = previous;
-        Ok(())
+        result
     }
 
     fn evaluate_if(&mut self, ifinput: &IfProps) -> LoxResult<()> {
@@ -408,7 +408,13 @@ impl Interpreter {
                 );
                 Ok(())
             }
-            _ => Ok(())
+            StatementType::ReturnStatement(prop) => {
+                let value = match &prop.value {
+                    Some(expr) => self.evaluate(expr)?,
+                    None => Rc::new(Literal::Basic(AtomicLiteral::Nil)),
+                };
+                Err(LoxError::ReturnValue(value))
+            }
         }
     }
 

@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::token::Token;
 use crate::parser::StatementType;
-use crate::lox_error::LoxResult;
+use crate::lox_error::{LoxError, LoxResult};
 
 pub struct LoxFunction {
     name: Token,                   
@@ -42,7 +42,12 @@ impl Callable for LoxFunction {
 
         match interpreter.evaluate_func_block(&*self.body, environment) {
             Ok(()) => Ok(Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))),
-            Err(e) => Err(e),
+            Err(e) => {
+                match e {
+                    LoxError::ReturnValue(v) => Ok(v),
+                    _ => Err(e),
+                }
+            }
         }
     }
 }

@@ -162,7 +162,6 @@ pub fn scanner(input: &str) -> LoxResult<Vec<Token>> {
                     ),
                     &mut token_lexeme,
                 );
-                current_line += 1;
             }
             '*' => {
                 push_token(

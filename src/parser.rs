@@ -36,7 +36,7 @@ pub enum FunctionType {
 
 pub struct ReturnProps {
     keyword: Token,
-    pub value: AtomicLiteral
+    pub value: Option<ExpressionType>
 }
 pub struct FunctionProps {
     pub name: Token,
@@ -227,15 +227,9 @@ impl Parser {
 
     fn return_statement(&mut self) -> LoxResult<StatementType> {
         let keyword = self.previous();
-        let mut value: AtomicLiteral = AtomicLiteral::Nil;
+        let mut value = None;
         if !self.check_token(&TokenType::SEMICOLON) {
-            value = match self.expression()? {
-                ExpressionType::Literal(lit) => lit,
-                _ => return Err(LoxError::ParseError {
-                    token: keyword.clone(),
-                    message: "Only literal values can be returned for now".to_string(),
-                })
-            }
+            value = Some(self.expression()?);
         }
         self.consume(TokenType::SEMICOLON, "Expected ; after return value")?;
         Ok(StatementType::ReturnStatement(ReturnProps {
