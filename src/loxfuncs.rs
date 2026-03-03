@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use crate::token::Token;
 use crate::parser::StatementType;
+use crate::lox_error::LoxResult;
 
 pub struct LoxFunction {
     name: Token,                   
@@ -32,20 +33,17 @@ impl Callable for LoxFunction {
         &self,
         interpreter: &mut Interpreter,
         arguments: Vec<Rc<Literal>>,
-    ) -> Rc<Literal> {
-
+    ) -> LoxResult<Rc<Literal>> {
         let environment = Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
 
-
-
-        for (param, arg) in self.params.iter().zip(arguments){
+        for (param, arg) in self.params.iter().zip(arguments) {
             environment.borrow_mut().define(param.lexeme.clone(), arg);
         }
-        
-        interpreter.evaluate_func_block(&*self.body, environment);
 
-        // return null;
-        Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))
+        match interpreter.evaluate_func_block(&*self.body, environment) {
+            Ok(()) => Ok(Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))),
+            Err(e) => Err(e),
+        }
     }
 }
 

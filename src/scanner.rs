@@ -1,5 +1,5 @@
 use crate::token::{AtomicLiteral, Token, TokenType};
-use std::io::Result;
+use crate::lox_error::{LoxError, LoxResult};
 
 const _KEYWORDS: [&str; 16] = [
     "and", "class", "else", "false", "fn", "for", "if", "null", "or", "print", "return", "super",
@@ -49,7 +49,7 @@ fn _is_alphanumeric(c: char) -> bool {
     return false;
 }
 
-pub fn scanner(input: &str) -> Result<Vec<Token>> {
+pub fn scanner(input: &str) -> LoxResult<Vec<Token>> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut current_line = 1;
     let mut token_lexeme = String::new();
@@ -232,7 +232,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '=' => {
                 if let Some(next_char) = char_iter.peek() {
                     if next_char == &'\0' {
-                        // give out error that unexpected end of file after = Even better try saying out that the assignment or whatever the user wanted to do is incomplete
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "=".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '='".to_string(), 
+                            }
+                        )
                     } else if next_char == &'=' {
                         char_iter.next();
                         push_token(
@@ -262,7 +272,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '&' => {
                 if let Some(next_char) = char_iter.peek(){
                     if next_char == &'\0' {
-                        // give out error
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "&".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '&'".to_string(), 
+                            }
+                        )
                     } else if next_char == &'&' {
                         char_iter.next();
                         push_token(
@@ -281,7 +301,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '|' => {
                 if let Some(next_char) = char_iter.peek(){
                     if next_char == &'\0' {
-                        // give out error
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "|".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '|'".to_string(), 
+                            }
+                        )
                     } else if next_char == &'|' {
                         char_iter.next();
                         push_token(
@@ -300,7 +330,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '>' => {
                 if let Some(next_char) = char_iter.peek() {
                     if next_char == &'\0' {
-                        // give out error that unexpected end of file after >
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "=".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '=='".to_string(), 
+                            }
+                        )
                     } else if next_char == &'=' {
                         char_iter.next();
                         push_token(
@@ -330,7 +370,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '<' => {
                 if let Some(next_char) = char_iter.peek() {
                     if next_char == &'\0' {
-                        // give out error that unexpected end of file after <
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "<".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '<'".to_string(), 
+                            }
+                        )
                     } else if next_char == &'=' {
                         char_iter.next();
                         push_token(
@@ -360,7 +410,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
             '!' => {
                 if let Some(next_char) = char_iter.peek() {
                     if next_char == &'\0' {
-                        // give out error that unexpected end of file after !
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "!".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unexpected end of file after '!'".to_string(), 
+                            }
+                        )
                     } else if next_char == &'=' {
                         char_iter.next();
                         push_token(
@@ -415,7 +475,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                         break;
                     }
                     if next_char == '\0' {
-                        // give out error that unexpected end of file in string AtomicLiteral
+                       return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::EQUAL,
+                                    "\"".to_string(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Unterminated string".to_string(), 
+                            }
+                        )
                     }
                     if next_char == '\n' {
                         current_line += 1;
@@ -446,7 +516,17 @@ pub fn scanner(input: &str) -> Result<Vec<Token>> {
                 let num_result = token_lexeme.parse::<f32>();
                 match num_result {
                     Err(_) => {
-                        // give out error that number AtomicLiteral could not be parsed
+                        return Err(
+                            LoxError::ScanError { 
+                                token: Token::new(
+                                    TokenType::NUMBER,
+                                    token_lexeme.clone(),
+                                    current_line,
+                                    AtomicLiteral::Nil,
+                                ),
+                                message: "Invalid number format".to_string(), 
+                            }
+                        )
                     }
                     Ok(num) => {
                         push_token(
