@@ -1,7 +1,7 @@
 use crate::loxfuncs::LoxFunction;
 use crate::token::{Token,AtomicLiteral};
 use std::rc::Rc;
-use crate::expression::{ExpressionType, is_truthy, is_equal};
+use crate::expression::{ExpressionType, is_truthy};
 use crate::resolver::{Resolver, Resolvable};
 use crate::lox_error::LoxResult;
 use crate::interpreter::Interpreter;
@@ -100,7 +100,7 @@ impl Resolvable for StatementType {
                 resolver.resolve(&statement.condition)?;
                 resolver.resolve(&*statement.statement)?;
             }
-            _ => {}
+            // _ => {}
         }
         Ok(())
     }   
@@ -120,7 +120,7 @@ impl StatementType {
             }
             StatementType::LetStatement(expr) => match *expr.initializer {
                 ExpressionType::Literal(AtomicLiteral::Nil) => {
-                    interpreter.storage.borrow_mut().define(
+                    interpreter.env.borrow_mut().define(
                         expr.name.lexeme.clone(),
                         Rc::new(Literal::Basic(AtomicLiteral::Nil)),
                     );
@@ -128,7 +128,7 @@ impl StatementType {
                 }
                 _ => {
                     let result = expr.initializer.evaluate(interpreter)?;
-                    interpreter.storage
+                    interpreter.env
                         .borrow_mut()
                         .define(expr.name.lexeme.clone(), result);
                     Ok(())
@@ -143,7 +143,7 @@ impl StatementType {
             },
             StatementType::Function(func_props) => {
                 let function = LoxFunction::new(Rc::new(func_props), interpreter);
-                interpreter.storage.borrow_mut().define(
+                interpreter.env.borrow_mut().define(
                     func_props.name.lexeme.clone(),
                     Rc::new(Literal::LoxCallable(Box::new(function))),
                 );
@@ -160,15 +160,15 @@ impl StatementType {
     }
 
     pub fn evaluate_blocks(statements: &mut Vec<StatementType>, interpreter: &mut Interpreter) -> LoxResult<()> {
-        let previous = Rc::clone(&interpreter.storage);
+        let previous = Rc::clone(&interpreter.env);
     
-        interpreter.storage = Rc::new(RefCell::new(crate::environment::Environment::new(Some(previous.clone()))));
+        interpreter.env = Rc::new(RefCell::new(crate::environment::Environment::new(Some(previous.clone()))));
     
         for statement in statements {
             statement.evaluate(interpreter)?;
         }
     
-        interpreter.storage = previous;
+        interpreter.env = previous;
         Ok(())
     }
 
@@ -177,13 +177,13 @@ impl StatementType {
         closure: Rc<RefCell<crate::environment::Environment>>,
         interpreter: &mut Interpreter,
     ) -> LoxResult<()> {
-        let previous = Rc::clone(&interpreter.storage);
+        let previous = Rc::clone(&interpreter.env);
     
-        interpreter.storage = closure;
+        interpreter.env = closure;
     
         let result = statement.evaluate(interpreter);
     
-        interpreter.storage = previous;
+        interpreter.env = previous;
         result  
     }
 

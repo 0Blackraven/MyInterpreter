@@ -15,7 +15,7 @@ impl Callable for Clock {
         match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(duration) => {
                 let now = duration.as_secs_f64();
-                Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(now as f32))))
+                Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(now as i32))))
             }
             Err(_) => Err(LoxError::RuntimeError {
                 token: None,

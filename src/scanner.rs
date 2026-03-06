@@ -512,7 +512,7 @@ pub fn scanner(input: &str) -> LoxResult<Vec<Token>> {
                         break;
                     }
                 }
-                let num_result = token_lexeme.parse::<f32>();
+                let num_result = token_lexeme.parse::<i32>();
                 match num_result {
                     Err(_) => {
                         return Err(

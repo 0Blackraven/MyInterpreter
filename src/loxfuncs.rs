@@ -18,7 +18,7 @@ impl LoxFunction {
             _name: func_props.name.clone(),      
             params: func_props.params.clone(),   
             body: func_props.body.clone(),       
-            closure: interpreter.storage.clone() 
+            closure: interpreter.env.clone() 
         };
     }
 }

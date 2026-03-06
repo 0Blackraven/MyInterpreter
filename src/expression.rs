@@ -13,7 +13,7 @@ use crate::token::Literal;
 use crate::interpreter::{Interpreter};
 use std::rc::Rc;
 
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub enum ExpressionType {
     Binary(BinaryExpression),
     Logical(BinaryExpression),
@@ -25,34 +25,34 @@ pub enum ExpressionType {
     Assignment(AssignExpression),
     Postfix(PostfixExpression),
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub enum FunctionType {
     Function,
     // Method
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub struct CallArgs {
     pub callee: Box<ExpressionType>,
     pub paren: Token,
     pub args: Vec<Box<ExpressionType>>
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub struct AssignExpression {
     pub name: Token,
     pub value: Box<ExpressionType>,
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub struct BinaryExpression {
     pub left: Box<ExpressionType>,
     pub operator: TokenType,
     pub right: Box<ExpressionType>,
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub struct UnaryExpression {
     pub operator: TokenType,
     pub right: Box<ExpressionType>,
 }
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 pub struct PostfixExpression {
     pub operator: TokenType,
     pub expr: Box<ExpressionType>,
@@ -119,29 +119,41 @@ pub fn is_equal(a: &Literal, b: &Literal) -> LoxResult<bool> {
 
 impl ExpressionType {
 
-    pub fn evaluate(&mut self, interpreter: &mut Interpreter) -> LoxResult<Rc<Literal>> {
+    pub fn evaluate(&self, interpreter: &mut Interpreter) -> LoxResult<Rc<Literal>> {
+
+        let varibale_lookup = |name: &Token, expr: &ExpressionType| {
+            let distance = interpreter.local.get(expr);
+            match distance {
+                Some(d) => interpreter.env.borrow().get_at(*d, &name.lexeme),
+                None => interpreter.global.borrow().get(&name),
+            }
+        };
+
         match self {
             ExpressionType::Literal(value) => Ok(Rc::new(Literal::Basic(value.clone()))),
 
             ExpressionType::Grouping(expr) => expr.evaluate(interpreter),
 
-            ExpressionType::Variable(name) => match interpreter.storage.borrow().get(&name) {
-                    Ok(value) => Ok(value),
-                    Err(e) => return Err(e),
-                }
+            ExpressionType::Variable(name) => varibale_lookup(name, self),
 
-            ExpressionType::Assignment(pookie) => {
-                let value: Rc<Literal> = pookie.value.evaluate(interpreter)?;
-                match interpreter.storage.borrow_mut().assign(pookie.name.clone(), value.clone()) {
-                    Ok(()) => Ok(value),
-                    Err(e) => return Err(e),
+            ExpressionType::Assignment(assignment) => {
+                let value = assignment.value.evaluate(interpreter)?;
+                let distance = interpreter.local.get(self);
+                match distance {
+                    Some(d) => {
+                        interpreter.env.borrow_mut().assign_at(*d, assignment.name.clone(), value.clone())?;
+                    }
+                    None => {
+                        interpreter.global.borrow_mut().assign(assignment.name.clone(), value.clone())?;
+                    }
                 }
+                Ok(value)
             }
 
             ExpressionType::Call(called) => {
                 let callee = called.callee.evaluate(interpreter)?;
                 let mut args: Vec<Rc<Literal>> = Vec::new();
-                for arg in &mut called.args {
+                for arg in &called.args {
                     args.push((**arg).evaluate(interpreter)?);
                 }
                 
@@ -166,25 +178,25 @@ impl ExpressionType {
 
             ExpressionType::Postfix(post) => match &*post.expr {
                 ExpressionType::Variable(name) => {
-                    let current = match interpreter.storage.borrow().get(&name) {
+                    let current = match interpreter.env.borrow().get(&name) {
                         Ok(val) => val,
                         Err(e) => return Err(e),
                     };
                     
                     match (&post.operator, &*current) {
                         (TokenType::INCREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
-                            match interpreter.storage.borrow_mut().assign(
+                            match interpreter.env.borrow_mut().assign(
                                 name.clone(),
-                                Rc::new(Literal::Basic(AtomicLiteral::Number(n + 1.0))),
+                                Rc::new(Literal::Basic(AtomicLiteral::Number(n + 1))),
                             ) {
                                 Ok(()) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(*n)))),
                                 Err(e) => Err(e),
                             }
                         }
                         (TokenType::DECREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
-                            match interpreter.storage.borrow_mut().assign(
+                            match interpreter.env.borrow_mut().assign(
                                 name.clone(),
-                                Rc::new(Literal::Basic(AtomicLiteral::Number(n - 1.0))),
+                                Rc::new(Literal::Basic(AtomicLiteral::Number(n - 1))),
                             ) {
                                 Ok(()) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(*n)))),
                                 Err(e) => Err(e),
@@ -273,7 +285,7 @@ impl ExpressionType {
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
                         ) => {
-                            if *b == 0.0 {
+                            if *b == 0 {
                                 return Err(LoxError::RuntimeError {
                                     token: None,
                                     message: "Modulo by zero".to_string(),
@@ -318,7 +330,7 @@ impl ExpressionType {
                     TokenType::SLASH => match (left.as_ref(), right.as_ref()) {
                         (
                             Literal::Basic(AtomicLiteral::Number(_)),
-                            Literal::Basic(AtomicLiteral::Number(0.0)),
+                            Literal::Basic(AtomicLiteral::Number(0)),
                         ) => {
                             return Err(LoxError::RuntimeError {
                                 token: None,

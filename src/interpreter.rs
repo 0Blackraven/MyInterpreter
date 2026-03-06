@@ -1,29 +1,33 @@
-use crate::statement::{StatementType, IfProps, WhileProps};
-use crate::expression::{ExpressionType, is_truthy};
+use crate::statement::{StatementType};
+use crate::expression::{ExpressionType};
 use crate::token::{Literal};
 use crate::{clock::Clock, environment::Environment};
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::lox_error::{LoxResult};
 
 pub struct Interpreter {
-    pub storage: Rc<RefCell<Environment>>,
+    pub global: Rc<RefCell<Environment>>,
+    pub env: Rc<RefCell<Environment>>,
+    pub local: HashMap<ExpressionType, usize>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        let interpreter = Interpreter {
-            storage: Rc::new(RefCell::new(Environment::new(None))),
-        };
-        interpreter.storage.borrow_mut().define(
+        let globals = Rc::new(RefCell::new(Environment::new(None)));
+        globals.borrow_mut().define(
             "clock".to_string(),
             Rc::new(Literal::LoxCallable(Box::new(Clock))),
         );
-        interpreter
+        
+        Interpreter {
+            global: globals.clone(),
+            env: globals,
+            local: HashMap::new(),
+        }
     }
  
-    pub fn resolve(&self, expr: &ExpressionType, depth: usize) -> LoxResult<()> {
-        Ok(())
+    pub fn resolve(&mut self, expr: &ExpressionType, depth: usize) {
+        self.local.insert(expr.clone(), depth);
     }
 
     pub fn interpreter(&mut self, mut statements: Vec<StatementType>) -> LoxResult<()> {

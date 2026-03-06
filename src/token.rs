@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::callable::Callable;
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug,Clone,PartialEq, Eq, Hash)]
 pub enum TokenType {
     // single char tokens
     LEFTPAREN, RIGHTPAREN, LEFTBRACE, RIGHTBRACE,
@@ -50,12 +50,12 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,PartialEq, Eq, Hash)]
 #[allow(dead_code)]
 
 pub enum AtomicLiteral {
     String(String),
-    Number(f32),
+    Number(i32),
     Bool(bool),
     Nil,
 }
@@ -79,7 +79,7 @@ impl fmt::Display for Literal {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Token {
     pub tokentype: TokenType,
     pub lexeme: String,

@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub struct Resolver<'a> {
-    interpreter: &'a Interpreter,
+    interpreter: &'a mut Interpreter,
     scopes: RefCell<Vec<Scope>>,
 }
 
@@ -27,7 +27,7 @@ impl<T: Resolvable> Resolvable for Vec<T> {
 }
 
 impl<'a> Resolver<'a> {
-    pub fn new(interpreter: &'a Interpreter) -> Self {
+    pub fn new(interpreter: &'a mut Interpreter) -> Self {
         Resolver {
             interpreter,
             scopes: Default::default(),
@@ -83,11 +83,11 @@ impl<'a> Resolver<'a> {
         return result;
     }
 
-    pub fn resolve_local (&self, expr: &ExpressionType, token: &Token) -> LoxResult<()>{
+    pub fn resolve_local (&mut self, expr: &ExpressionType, token: &Token) -> LoxResult<()>{
         let scopes = self.scopes.borrow();
         for (idx, scope) in scopes.iter().enumerate().rev() {
             if scope.contains_key(&token.lexeme) {
-                self.interpreter.resolve(expr, scopes.len() - idx - 1)?;
+                self.interpreter.resolve(expr, scopes.len() - idx - 1);
                 return Ok(());
             }
         }
