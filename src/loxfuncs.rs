@@ -1,5 +1,3 @@
-
-
 use crate::statement::{FunctionProps,StatementType};
 use crate::{callable::Callable, interpreter::Interpreter, token::Literal, environment::Environment};
 use std::cell::RefCell;
@@ -42,7 +40,7 @@ impl Callable for LoxFunction {
         }
 
         let mut body_clone = (*self.body).clone();
-        match interpreter.evaluate_func_block(&mut body_clone, environment) {
+        match StatementType::evaluate_func_block(&mut body_clone, environment, interpreter){
             Ok(()) => Ok(Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))),
             Err(e) => {
                 match e {

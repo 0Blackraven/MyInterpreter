@@ -98,7 +98,27 @@ impl Resolvable for ExpressionType {
     }
 }
 
+
+pub fn is_truthy(value: &Literal) -> bool {
+    match value {
+        Literal::Basic(AtomicLiteral::Nil) => false,
+        Literal::Basic(AtomicLiteral::Bool(false)) => false,
+        _ => true,
+    }
+}
+
+pub fn is_equal(a: &Literal, b: &Literal) -> LoxResult<bool> {
+    match (a, b) {
+        (Literal::Basic(a), Literal::Basic(b)) => Ok(a == b),
+        _ => Err(LoxError::RuntimeError {
+            token: None,
+            message: "Cannot compare callable objects".to_string(),
+        })
+    }
+}
+
 impl ExpressionType {
+
     pub fn evaluate(&mut self, interpreter: &mut Interpreter) -> LoxResult<Rc<Literal>> {
         match self {
             ExpressionType::Literal(value) => Ok(Rc::new(Literal::Basic(value.clone()))),
@@ -197,7 +217,7 @@ impl ExpressionType {
                         }
                     }
                     TokenType::BANG => {
-                        Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(!interpreter.is_truthy(&right)))))
+                        Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(!is_truthy(&right)))))
                     }
                     _ => unreachable!(),
                 }
@@ -206,13 +226,13 @@ impl ExpressionType {
             ExpressionType::Logical(expr) => {
                 let left = &expr.left.evaluate(interpreter)?;
                 if expr.operator == TokenType::OR {
-                    if interpreter.is_truthy(&left) {
+                    if is_truthy(&left) {
                         Ok(left.clone())
                     } else {
                         expr.right.evaluate(interpreter)
                     }
                 } else {
-                    if !interpreter.is_truthy(&left) {
+                    if !is_truthy(&left) {
                         Ok(left.clone())
                     } else {
                         expr.right.evaluate(interpreter)
@@ -365,10 +385,10 @@ impl ExpressionType {
                         },
                     },
                     TokenType::EQUALEQUAL => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(
-                        interpreter.is_equal(&left, &right)?,
+                        is_equal(&left, &right)?,
                     )))),
                     TokenType::BANGEQUAL => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(
-                        !interpreter.is_equal(&left, &right)?,
+                        !is_equal(&left, &right)?,
                     )))),
                     _ => Ok(Rc::new(Literal::Basic(AtomicLiteral::Nil))), // should not reach here
                 }

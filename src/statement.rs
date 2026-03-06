@@ -1,12 +1,13 @@
 use crate::loxfuncs::LoxFunction;
 use crate::token::{Token,AtomicLiteral};
 use std::rc::Rc;
-use crate::expression::ExpressionType;
+use crate::expression::{ExpressionType, is_truthy, is_equal};
 use crate::resolver::{Resolver, Resolvable};
 use crate::lox_error::LoxResult;
 use crate::interpreter::Interpreter;
 use crate::token::Literal;
 use crate::lox_error::LoxError;
+use std::cell::RefCell;
 
 #[derive(Clone)]
 pub enum StatementType {
@@ -133,12 +134,12 @@ impl StatementType {
                     Ok(())
                 }
             },
-            StatementType::BlockStatement(statements) => interpreter.evaluate_blocks(statements),
+            StatementType::BlockStatement(statements) => Self::evaluate_blocks(statements, interpreter),
             StatementType::IfStatement(iftype) => {
-                interpreter.evaluate_if(iftype)
+                Self::evaluate_if(iftype, interpreter)
             },
             StatementType::WhileStatement(wild) => {
-                interpreter.evaluate_while(wild)
+                Self::evaluate_while(wild, interpreter)
             },
             StatementType::Function(func_props) => {
                 let function = LoxFunction::new(Rc::new(func_props), interpreter);
@@ -157,4 +158,54 @@ impl StatementType {
             }
         }
     }
+
+    pub fn evaluate_blocks(statements: &mut Vec<StatementType>, interpreter: &mut Interpreter) -> LoxResult<()> {
+        let previous = Rc::clone(&interpreter.storage);
+    
+        interpreter.storage = Rc::new(RefCell::new(crate::environment::Environment::new(Some(previous.clone()))));
+    
+        for statement in statements {
+            statement.evaluate(interpreter)?;
+        }
+    
+        interpreter.storage = previous;
+        Ok(())
+    }
+
+    pub fn evaluate_func_block(
+        statement: &mut StatementType,
+        closure: Rc<RefCell<crate::environment::Environment>>,
+        interpreter: &mut Interpreter,
+    ) -> LoxResult<()> {
+        let previous = Rc::clone(&interpreter.storage);
+    
+        interpreter.storage = closure;
+    
+        let result = statement.evaluate(interpreter);
+    
+        interpreter.storage = previous;
+        result  
+    }
+
+    pub fn evaluate_if(ifinput: &mut IfProps, interpreter: &mut Interpreter) -> LoxResult<()> {
+        let comparison = ifinput.comparison.evaluate(interpreter)?;
+    
+        if is_truthy(&comparison) {
+            ifinput.ifcase.evaluate(interpreter)?;
+        } else if let Some(elsecase) = &mut ifinput.elsecase {
+            elsecase.evaluate(interpreter)?;
+        }
+        Ok(())
+    }
+
+    pub fn evaluate_while(wild: &mut WhileProps, interpreter: &mut Interpreter) -> LoxResult<()> {
+        while {
+            let cond = wild.condition.evaluate(interpreter)?;
+            is_truthy(&cond)
+        } {
+            wild.statement.evaluate(interpreter)?;
+        }
+        Ok(())
+    }
 }
+
