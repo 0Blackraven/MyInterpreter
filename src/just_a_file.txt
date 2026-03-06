@@ -66,3 +66,35 @@ fn fib(n) {
 for (let i = 0; i < 20; i = i + 1) {
   print fib(i);
 }
+
+fn makeCounter() {
+  let i = 0;
+  fn count() {
+    i = i + 1;
+    print i;
+  }
+
+  return count;
+}
+
+let counter = makeCounter();
+counter(); // "1".
+counter(); // "2".
+
+let a = "outer";
+{
+  print a;
+  let a = "inner";
+}
+print a;
+
+let a = "global";
+{
+  fn showA() {
+    print a;
+  }
+
+  showA();
+  let a = "block";
+  showA();
+}

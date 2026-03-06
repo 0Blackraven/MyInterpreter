@@ -1,90 +1,9 @@
 use crate::token::{Token, TokenType, AtomicLiteral};
 use std::rc::Rc;
 use crate::lox_error::{LoxError, LoxResult};
+use crate::statement::*;
+use crate::expression::*;
 
-// problem : line 76 , 176
-// disclaimer: i will not use the generic way of rust here
-
-pub enum ExpressionType {
-    Binary(BinaryExpression),
-    Logical(BinaryExpression),
-    Unary(UnaryExpression),
-    Literal(AtomicLiteral),
-    Grouping(Box<ExpressionType>),
-    Call(CallArgs),
-    Variable(Token),
-    Assignment(AssignExpression),
-    Postfix(PostfixExpression),
-}
-
-pub enum StatementType {
-    ExpressionStatement(ExpressionType),
-    PrintStatement(ExpressionType),
-    LetStatement(LetExpressionProps),
-    BlockStatement(Vec<StatementType>),
-    IfStatement(IfProps),
-    Function(FunctionProps),
-    WhileStatement(WhileProps),
-    ReturnStatement(ReturnProps),
-    // ForStatement()
-}
-
-pub enum FunctionType {
-    Function,
-    Method
-}
-
-pub struct ReturnProps {
-    keyword: Token,
-    pub value: Option<ExpressionType>
-}
-pub struct FunctionProps {
-    pub name: Token,
-    pub params: Vec<Token>,
-    pub body: Rc<StatementType>
-}
-pub struct WhileProps {
-    pub condition: ExpressionType,
-    pub statement: Box<StatementType>,
-}
-
-pub struct CallArgs {
-    pub callee: Box<ExpressionType>,
-    pub paren: Token,
-    pub args: Vec<Box<ExpressionType>>
-}
-
-pub struct IfProps {
-    pub comparison: ExpressionType,
-    pub ifcase: Box<StatementType>,
-    pub elsecase: Option<Box<StatementType>>,
-}
-
-pub struct AssignExpression {
-    pub name: Token,
-    pub value: Box<ExpressionType>,
-}
-
-pub struct LetExpressionProps {
-    pub name: Token,
-    pub initializer: Box<ExpressionType>,
-}
-
-pub struct BinaryExpression {
-    pub left: Box<ExpressionType>,
-    pub operator: TokenType,
-    pub right: Box<ExpressionType>,
-}
-
-pub struct UnaryExpression {
-    pub operator: TokenType,
-    pub right: Box<ExpressionType>,
-}
-
-pub struct PostfixExpression {
-    pub operator: TokenType,
-    pub expr: Box<ExpressionType>,
-}
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
@@ -233,7 +152,7 @@ impl Parser {
         }
         self.consume(TokenType::SEMICOLON, "Expected ; after return value")?;
         Ok(StatementType::ReturnStatement(ReturnProps {
-            keyword,
+            _keyword: keyword,
             value
         }))
     }

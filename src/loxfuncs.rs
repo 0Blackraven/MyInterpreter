@@ -1,25 +1,26 @@
-use crate::parser::FunctionProps;
+
+
+use crate::statement::{FunctionProps,StatementType};
 use crate::{callable::Callable, interpreter::Interpreter, token::Literal, environment::Environment};
 use std::cell::RefCell;
 use std::rc::Rc;
 use crate::token::Token;
-use crate::parser::StatementType;
 use crate::lox_error::{LoxError, LoxResult};
 
 pub struct LoxFunction {
-    name: Token,                   
-    params: Vec<Token>,              
-    body: Rc<StatementType>,
+    _name: Token,                   
+    params: Vec<Token>,             
+    body: Rc<StatementType>,        
     closure: Rc<RefCell<Environment>>
 }
 
 impl LoxFunction {
     pub fn new ( func_props : Rc<&FunctionProps>, interpreter: &mut Interpreter) -> Self {
         return LoxFunction {
-            name: func_props.name.clone(),
-            params: func_props.params.clone(),
-            body: func_props.body.clone(),
-            closure: interpreter.storage.clone()
+            _name: func_props.name.clone(),      
+            params: func_props.params.clone(),   
+            body: func_props.body.clone(),       
+            closure: interpreter.storage.clone() 
         };
     }
 }
@@ -40,7 +41,8 @@ impl Callable for LoxFunction {
             environment.borrow_mut().define(param.lexeme.clone(), arg);
         }
 
-        match interpreter.evaluate_func_block(&*self.body, environment) {
+        let mut body_clone = (*self.body).clone();
+        match interpreter.evaluate_func_block(&mut body_clone, environment) {
             Ok(()) => Ok(Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))),
             Err(e) => {
                 match e {
