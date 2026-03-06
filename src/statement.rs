@@ -1,7 +1,7 @@
 use crate::loxfuncs::LoxFunction;
 use crate::token::{Token,AtomicLiteral};
 use std::rc::Rc;
-use crate::expression::{ExpressionType, is_truthy};
+use crate::expression::{ExpressionType, FunctionType, is_truthy};
 use crate::resolver::{Resolver, Resolvable};
 use crate::lox_error::LoxResult;
 use crate::interpreter::Interpreter;
@@ -58,7 +58,7 @@ impl Resolvable for StatementType {
             }
 
             StatementType::LetStatement(statement) => {
-                resolver.declare(&statement.name);
+                resolver.declare(&statement.name)?;
                 match *statement.initializer {
                     ExpressionType::Literal(AtomicLiteral::Nil) => {},
                     _ => {
@@ -69,9 +69,9 @@ impl Resolvable for StatementType {
             }
 
             StatementType::Function(func) => {
-                resolver.declare(&func.name);
+                resolver.declare(&func.name)?;
                 resolver.define(&func.name);
-                resolver.resolve_function(func)?;
+                resolver.resolve_function(func, FunctionType::Function)?;
             }
 
             StatementType::ExpressionStatement(statement) => {
@@ -91,6 +91,12 @@ impl Resolvable for StatementType {
             }
 
             StatementType::ReturnStatement(statement) => {
+                if resolver.current_function == FunctionType::None {
+                    return Err(LoxError::RuntimeError {
+                        token: Some(statement._keyword.clone()),
+                        message: "Cannot return from top-level code.".to_string(),
+                    });
+                }
                 if let Some(value) = &statement.value {
                     resolver.resolve(value)?;
                 }
@@ -121,16 +127,16 @@ impl StatementType {
             StatementType::LetStatement(expr) => match *expr.initializer {
                 ExpressionType::Literal(AtomicLiteral::Nil) => {
                     interpreter.env.borrow_mut().define(
-                        expr.name.lexeme.clone(),
+                        expr.name.clone(),
                         Rc::new(Literal::Basic(AtomicLiteral::Nil)),
-                    );
+                    )?;
                     Ok(())
                 }
                 _ => {
                     let result = expr.initializer.evaluate(interpreter)?;
                     interpreter.env
                         .borrow_mut()
-                        .define(expr.name.lexeme.clone(), result);
+                        .define(expr.name.clone(), result)?;
                     Ok(())
                 }
             },
@@ -144,9 +150,9 @@ impl StatementType {
             StatementType::Function(func_props) => {
                 let function = LoxFunction::new(Rc::new(func_props), interpreter);
                 interpreter.env.borrow_mut().define(
-                    func_props.name.lexeme.clone(),
+                    func_props.name.clone(),
                     Rc::new(Literal::LoxCallable(Box::new(function))),
-                );
+                )?;
                 Ok(())
             }
             StatementType::ReturnStatement(prop) => {

@@ -20,8 +20,16 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: String, value: Rc<Literal>) {
-        self.variables.insert(name, value);
+    pub fn define(&mut self, name: Token, value: Rc<Literal>) -> LoxResult<()> {
+        if !self.variables.contains_key(&name.lexeme) {
+            self.variables.insert(name.lexeme, value);
+            Ok(())
+        } else {
+            return Err(LoxError::RuntimeError {
+                token: Some(name.clone()),
+                message: format!("Variable with name {} already declared in this scope", name.lexeme),
+            });
+        }
     }
 
     pub fn get(&self, token: &Token) -> LoxResult<Rc<Literal>> {

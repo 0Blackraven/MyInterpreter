@@ -36,7 +36,7 @@ impl Callable for LoxFunction {
         let environment = Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            environment.borrow_mut().define(param.lexeme.clone(), arg);
+            environment.borrow_mut().define(param.clone(), arg)?;
         }
 
         let mut body_clone = (*self.body).clone();

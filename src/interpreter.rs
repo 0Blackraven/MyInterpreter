@@ -1,6 +1,6 @@
 use crate::statement::{StatementType};
 use crate::expression::{ExpressionType};
-use crate::token::{Literal};
+use crate::token::{Literal,Token};
 use crate::{clock::Clock, environment::Environment};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::lox_error::{LoxResult};
@@ -14,11 +14,11 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RefCell::new(Environment::new(None)));
-        globals.borrow_mut().define(
-            "clock".to_string(),
+        let _ = globals.borrow_mut().define(
+            Token::new(crate::token::TokenType::IDENTIFIER, "clock".to_string(),0,crate::token::AtomicLiteral::Nil),
             Rc::new(Literal::LoxCallable(Box::new(Clock))),
         );
-        
+    
         Interpreter {
             global: globals.clone(),
             env: globals,

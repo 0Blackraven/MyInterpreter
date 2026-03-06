@@ -28,7 +28,8 @@ pub enum ExpressionType {
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub enum FunctionType {
     Function,
-    // Method
+    None,
+    
 }
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub struct CallArgs {

@@ -1,6 +1,6 @@
-use crate::expression::ExpressionType;
+use crate::expression::{ExpressionType,FunctionType};
 use crate::interpreter::Interpreter;
-use crate::lox_error::LoxResult;
+use crate::lox_error::{LoxError, LoxResult};
 use crate::statement::FunctionProps;
 use crate::token::Token;
 use std::cell::RefCell;
@@ -9,6 +9,7 @@ use std::collections::HashMap;
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: RefCell<Vec<Scope>>,
+    pub current_function: FunctionType,
 }
 
 type Scope = HashMap<String, bool>;
@@ -31,6 +32,7 @@ impl<'a> Resolver<'a> {
         Resolver {
             interpreter,
             scopes: Default::default(),
+            current_function: FunctionType::None,
         }
     }
 
@@ -46,15 +48,20 @@ impl<'a> Resolver<'a> {
         node.resolve(self)
     }
 
-    pub fn declare (&self, token: &Token) {
+    pub fn declare (&self, token: &Token) -> LoxResult<()> {
         if self.scopes.borrow().is_empty() {
-            return;
+            return Ok(());
         }
         let mut scopes = self.scopes.borrow_mut();
         let scope_result = scopes.last_mut();
         if let Some(scope) = scope_result {
+            if scope.contains_key(&token.lexeme) {
+                return Err(
+                    LoxError::RuntimeError { token: Some(token.clone()), message: format!("Variable with name {} already declared in this scope", token.lexeme) }
+                );}
             scope.insert(token.lexeme.clone(), false);
-        }
+        }    
+        Ok(())
     }
 
     pub fn define (&mut self, token: &Token) {
@@ -94,14 +101,17 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    pub fn resolve_function (&mut self, func: &FunctionProps) -> LoxResult<()> {
+    pub fn resolve_function (&mut self, func: &FunctionProps, func_type: FunctionType) -> LoxResult<()> {
+        let enclosing_function = self.current_function.clone();
+        self.current_function = func_type;
         self.begin_scope();
         for param in &func.params {
-            self.declare(param);
+            self.declare(param)?;
             self.define(param);
         }
         self.resolve(&*func.body)?;
         self.end_scope();
+        self.current_function = enclosing_function;
         Ok(())
     }
 }
