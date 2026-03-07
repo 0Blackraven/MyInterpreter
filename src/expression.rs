@@ -4,10 +4,10 @@ use crate::lox_error::LoxError;
 use crate::lox_error::LoxResult;
 use crate::token::Literal;
 use crate::interpreter::{Interpreter};
-use std::rc::Rc;
 
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub enum ExpressionType {
+    This(Token),
     Binary(BinaryExpression),
     Logical(BinaryExpression),
     Unary(UnaryExpression),
@@ -103,7 +103,8 @@ impl Resolvable for ExpressionType {
             ExpressionType::Set(set) => {
                 resolver.resolve(set.object.as_ref())?;
                 resolver.resolve(set.value.as_ref())?;
-            }
+            },
+            ExpressionType::This(this) => resolver.resolve_local(self, this)?,
             _ => {}
         }
         Ok(())
@@ -131,7 +132,7 @@ pub fn is_equal(a: &Literal, b: &Literal) -> LoxResult<bool> {
 
 impl ExpressionType {
 
-    pub fn evaluate(&self, interpreter: &mut Interpreter) -> LoxResult<Rc<Literal>> {
+    pub fn evaluate(&self, interpreter: &mut Interpreter) -> LoxResult<Literal> {
 
         let varibale_lookup = |name: &Token, expr: &ExpressionType| {
             let distance = interpreter.local.get(expr);
@@ -142,7 +143,9 @@ impl ExpressionType {
         };
 
         match self {
-            ExpressionType::Literal(value) => Ok(Rc::new(Literal::Basic(value.clone()))),
+            ExpressionType::This(this) => varibale_lookup(this,self),
+
+            ExpressionType::Literal(value) => Ok(Literal::Basic(value.clone())),
 
             ExpressionType::Grouping(expr) => expr.evaluate(interpreter),
 
@@ -164,12 +167,12 @@ impl ExpressionType {
 
             ExpressionType::Call(called) => {
                 let callee = called.callee.evaluate(interpreter)?;
-                let mut args: Vec<Rc<Literal>> = Vec::new();
+                let mut args: Vec<Literal> = Vec::new();
                 for arg in &called.args {
                     args.push((**arg).evaluate(interpreter)?);
                 }
                 
-                match callee.as_ref() {
+                match callee {
                     Literal::LoxCallable(function) => {
                         if args.len() != function.arity() {
                             return Err(LoxError::RuntimeError {
@@ -195,22 +198,22 @@ impl ExpressionType {
                         Err(e) => return Err(e),
                     };
                     
-                    match (&post.operator, &*current) {
+                    match (&post.operator, &current) {
                         (TokenType::INCREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
                             match interpreter.env.borrow_mut().assign(
                                 name.clone(),
-                                Rc::new(Literal::Basic(AtomicLiteral::Number(n + 1))),
+                                Literal::Basic(AtomicLiteral::Number(n + 1)),
                             ) {
-                                Ok(()) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(*n)))),
+                                Ok(()) => Ok(Literal::Basic(AtomicLiteral::Number(*n))),
                                 Err(e) => Err(e),
                             }
                         }
                         (TokenType::DECREMENTOR, Literal::Basic(AtomicLiteral::Number(n))) => {
                             match interpreter.env.borrow_mut().assign(
                                 name.clone(),
-                                Rc::new(Literal::Basic(AtomicLiteral::Number(n - 1))),
+                                Literal::Basic(AtomicLiteral::Number(n - 1)),
                             ) {
-                                Ok(()) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(*n)))),
+                                Ok(()) => Ok(Literal::Basic(AtomicLiteral::Number(*n))),
                                 Err(e) => Err(e),
                             }
                         }
@@ -228,9 +231,9 @@ impl ExpressionType {
 
             ExpressionType::Get(get) => {
                 let object = get.object.evaluate(interpreter)?;
-                match object.as_ref() {
+                match object {
                     Literal::Instance(i) => {
-                        let result = i.borrow_mut().get(get.name.clone())?;
+                        let result = i.get(get.name.clone())?;
                         Ok(result)
                     }
                     _ => {
@@ -245,9 +248,9 @@ impl ExpressionType {
             ExpressionType::Set(set) => {
                 let object = set.object.evaluate(interpreter)?;
                 let value = set.value.evaluate(interpreter)?;
-                match object.as_ref() {
-                    Literal::Instance(i) => {
-                        i.borrow_mut().set(set.name.clone(), value.clone());
+                match object {
+                    Literal::Instance(mut i) => {
+                        i.set(set.name.clone(), value.clone());
                         Ok(value)
                     }
                     _ => {
@@ -264,8 +267,8 @@ impl ExpressionType {
                 
                 match expr.operator {
                     TokenType::MINUS => {
-                        if let Literal::Basic(AtomicLiteral::Number(n)) = **right {
-                            Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(-n))))
+                        if let Literal::Basic(AtomicLiteral::Number(n)) = right {
+                            Ok(Literal::Basic(AtomicLiteral::Number(-n)))
                         } else {
                             Err(LoxError::RuntimeError {
                                 token: None,
@@ -274,7 +277,7 @@ impl ExpressionType {
                         }
                     }
                     TokenType::BANG => {
-                        Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(!is_truthy(&right)))))
+                        Ok(Literal::Basic(AtomicLiteral::Bool(!is_truthy(&right))))
                     }
                     _ => unreachable!(),
                 }
@@ -302,41 +305,41 @@ impl ExpressionType {
                 let right = expr.right.evaluate(interpreter)?;
 
                 match expr.operator {
-                    TokenType::PLUS => match (left.as_ref(), right.as_ref()) {
+                    TokenType::PLUS => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(a + b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Number(a + b))),
                         (
                             Literal::Basic(AtomicLiteral::String(a)),
                             Literal::Basic(AtomicLiteral::String(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::String(a.to_string() + b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::String(a.to_string() + &b))),
                         (
                             Literal::Basic(AtomicLiteral::String(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::String(a.to_owned() + &b.to_string())))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::String(a.to_owned() + &b.to_string()))),
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::String(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::String(a.to_string() + &b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::String(a.to_string() + &b))),
                         _ => return Err(LoxError::RuntimeError {
                                 token: None,
                                 message: "Operands must be two numbers or two strings".to_string(),
                             }),
                     },
 
-                    TokenType::MODULO => match (left.as_ref(), right.as_ref()) {
+                    TokenType::MODULO => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
                         ) => {
-                            if *b == 0 {
+                            if b == 0 {
                                 return Err(LoxError::RuntimeError {
                                     token: None,
                                     message: "Modulo by zero".to_string(),
                                 });
                             }
-                            Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(a % b))))
+                            Ok(Literal::Basic(AtomicLiteral::Number(a % b)))
                         },
                         _ => {
                             return Err(LoxError::RuntimeError {
@@ -346,11 +349,11 @@ impl ExpressionType {
                         }
                     },
 
-                    TokenType::MINUS => match (left.as_ref(), right.as_ref()) {
+                    TokenType::MINUS => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(a - b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Number(a - b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -359,11 +362,11 @@ impl ExpressionType {
                         },
                     },
 
-                    TokenType::STAR => match (left.as_ref(), right.as_ref()) {
+                    TokenType::STAR => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(a * b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Number(a * b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -372,7 +375,7 @@ impl ExpressionType {
                         },
                     },
 
-                    TokenType::SLASH => match (left.as_ref(), right.as_ref()) {
+                    TokenType::SLASH => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(_)),
                             Literal::Basic(AtomicLiteral::Number(0)),
@@ -385,7 +388,7 @@ impl ExpressionType {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Number(a / b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Number(a / b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -393,11 +396,11 @@ impl ExpressionType {
                             });
                         },
                     },
-                    TokenType::GREATER => match (left.as_ref(), right.as_ref()) {
+                    TokenType::GREATER => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(a > b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Bool(a > b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -405,11 +408,11 @@ impl ExpressionType {
                             });
                         },
                     },
-                    TokenType::GREATEREQUAL => match (left.as_ref(), right.as_ref()) {
+                    TokenType::GREATEREQUAL => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(a >= b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Bool(a >= b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -417,11 +420,11 @@ impl ExpressionType {
                             });
                         },
                     },
-                    TokenType::LESS => match (left.as_ref(), right.as_ref()) {
+                    TokenType::LESS => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(a < b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Bool(a < b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -429,11 +432,11 @@ impl ExpressionType {
                             });
                         },
                     },
-                    TokenType::LESSEQUAL => match (left.as_ref(), right.as_ref()) {
+                    TokenType::LESSEQUAL => match (left, right) {
                         (
                             Literal::Basic(AtomicLiteral::Number(a)),
                             Literal::Basic(AtomicLiteral::Number(b)),
-                        ) => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(a <= b)))),
+                        ) => Ok(Literal::Basic(AtomicLiteral::Bool(a <= b))),
                         _ => {
                             return Err(LoxError::RuntimeError {
                                 token: None,
@@ -441,13 +444,13 @@ impl ExpressionType {
                             });
                         },
                     },
-                    TokenType::EQUALEQUAL => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(
+                    TokenType::EQUALEQUAL => Ok(Literal::Basic(AtomicLiteral::Bool(
                         is_equal(&left, &right)?,
-                    )))),
-                    TokenType::BANGEQUAL => Ok(Rc::new(Literal::Basic(AtomicLiteral::Bool(
+                    ))),
+                    TokenType::BANGEQUAL => Ok(Literal::Basic(AtomicLiteral::Bool(
                         !is_equal(&left, &right)?,
-                    )))),
-                    _ => Ok(Rc::new(Literal::Basic(AtomicLiteral::Nil))), // should not reach here
+                    ))),
+                    _ => Ok(Literal::Basic(AtomicLiteral::Nil)), // should not reach here
                 }
             }
         }

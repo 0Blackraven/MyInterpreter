@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
-    scopes: RefCell<Vec<Scope>>,
+    pub scopes: RefCell<Vec<Scope>>,
     pub current_function: FunctionType,
 }
 

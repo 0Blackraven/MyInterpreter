@@ -512,6 +512,8 @@ impl Parser {
             Ok(ExpressionType::Grouping(Box::new(expr)))
         } else if self.match_token(&[TokenType::IDENTIFIER]) {
             Ok(ExpressionType::Variable(self.previous()))
+        } else if self.match_token(&[TokenType::THIS]) {
+            Ok(ExpressionType::This(self.previous()))
         } else {
             Err(self.error(self.peek(), "Expect expression."))
         }

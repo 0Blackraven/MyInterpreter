@@ -9,7 +9,7 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct Environment {
     pub enclosing: Option<Rc<RefCell<Environment>>>,
-    variables: HashMap<String, Rc<Literal>>,
+    variables: HashMap<String, Literal>,
 }
 
 impl Environment {
@@ -20,7 +20,7 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: Token, value: Rc<Literal>) -> LoxResult<()> {
+    pub fn define(&mut self, name: Token, value: Literal) -> LoxResult<()> {
         if !self.variables.contains_key(&name.lexeme) {
             self.variables.insert(name.lexeme, value);
             Ok(())
@@ -32,8 +32,8 @@ impl Environment {
         }
     }
 
-    pub fn get(&self, token: &Token) -> LoxResult<Rc<Literal>> {
-        let value_option: Option<&Rc<Literal>> = self.variables.get(token.lexeme.as_str());
+    pub fn get(&self, token: &Token) -> LoxResult<Literal> {
+        let value_option: Option<&Literal> = self.variables.get(token.lexeme.as_str());
         match value_option {
             Some(value) => return Ok(value.to_owned()),
             None => {
@@ -49,7 +49,7 @@ impl Environment {
         }
     }
 
-    pub fn assign(&mut self, token: Token, value: Rc<Literal>) -> LoxResult<()> {
+    pub fn assign(&mut self, token: Token, value: Literal) -> LoxResult<()> {
         let x_result = self.variables.get_mut(&token.lexeme);
         match x_result {
             Some(x) => {
@@ -69,7 +69,7 @@ impl Environment {
         }
     }
 
-    pub fn get_at(&self, dist: usize, name: &str) -> LoxResult<Rc<Literal>> {
+    pub fn get_at(&self, dist: usize, name: &str) -> LoxResult<Literal> {
         if dist == 0 {
             return self
                 .variables
@@ -114,7 +114,7 @@ impl Environment {
         Ok(current)
     }
 
-    pub fn assign_at(&mut self, dist: usize, token: Token, value: Rc<Literal>) -> LoxResult<()> {
+    pub fn assign_at(&mut self, dist: usize, token: Token, value: Literal) -> LoxResult<()> {
         if dist == 0 {
             return self.assign(token, value);
         }

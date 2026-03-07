@@ -1,3 +1,4 @@
+use crate::lox_instance::LoxInstance;
 use crate::statement::{FunctionProps,StatementType};
 use crate::{callable::Callable, interpreter::Interpreter, token::Literal, environment::Environment};
 use std::cell::RefCell;
@@ -21,6 +22,19 @@ impl LoxFunction {
             closure: interpreter.env.clone() 
         };
     }
+
+    pub fn bind(&self, instance: &LoxInstance) -> LoxFunction {
+        let mut env = Environment::new(Some(self.closure.clone()));
+        let _ = env.define(
+            Token::new(crate::token::TokenType::THIS, "this".to_string(), 0, crate::token::AtomicLiteral::Nil),
+            Literal::Instance(instance.to_owned()));
+        LoxFunction { 
+            _name: self._name.clone(), 
+            params: self.params.clone(), 
+            body: self.body.clone(), 
+            closure: Rc::new(RefCell::new(env)) 
+        }    
+    }
 }
 
 impl Callable for LoxFunction {
@@ -31,17 +45,23 @@ impl Callable for LoxFunction {
     fn call(
         &self,
         interpreter: &mut Interpreter,
-        arguments: Vec<Rc<Literal>>,
-    ) -> LoxResult<Rc<Literal>> {
-        let environment = Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
+        arguments: Vec<Literal>,
+    ) -> LoxResult<Literal> {
+        let previous = Rc::clone(&interpreter.env);
+        
+        let closure= Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            environment.borrow_mut().define(param.clone(), arg)?;
+            interpreter.env.borrow_mut().define(param.clone(), arg)?;
         }
 
         let mut body_clone = (*self.body).clone();
-        match StatementType::evaluate_func_block(&mut body_clone, environment, interpreter){
-            Ok(()) => Ok(Rc::new(Literal::Basic(crate::token::AtomicLiteral::Nil))),
+        let result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
+        
+        interpreter.env = previous;
+        
+        match result {
+            Ok(()) => Ok(Literal::Basic(crate::token::AtomicLiteral::Nil)),
             Err(e) => {
                 match e {
                     LoxError::ReturnValue(v) => Ok(v),

@@ -4,7 +4,7 @@ use crate::token::{Token,AtomicLiteral};
 use std::collections::HashMap;
 use std::rc::Rc;
 use crate::expression::{ExpressionType, FunctionType, is_truthy};
-use crate::resolver::{Resolver, Resolvable};
+use crate::resolver::{Resolvable, Resolver};
 use crate::lox_error::LoxResult;
 use crate::interpreter::Interpreter;
 use crate::token::Literal;
@@ -61,7 +61,7 @@ pub struct LetExpressionProps {
 
 impl Resolvable for StatementType {
     fn resolve(&self, resolver: &mut Resolver) -> LoxResult<()> {
-        match &self {
+        match self {
             StatementType::BlockStatement(statements) => {
                 resolver.begin_scope();
                 resolver.resolve(statements)?;
@@ -120,6 +120,14 @@ impl Resolvable for StatementType {
             StatementType::ClassStatement(class_prop) => {
                 resolver.declare(&class_prop.name)?;
                 resolver.define(&class_prop.name);
+                resolver.begin_scope();
+                {
+                    let mut scopes = resolver.scopes.borrow_mut();
+                    let scope_result = scopes.last_mut();
+                    if let Some(scope) = scope_result {
+                        scope.insert("this".to_string(), true);
+                    }
+                }
                 for method in &class_prop.methods {
                     match method {
                         StatementType::Function(func) => {
@@ -133,6 +141,7 @@ impl Resolvable for StatementType {
                         }
                     }
                 }
+                resolver.end_scope();
             }
             // _ => {}
         }
@@ -156,7 +165,7 @@ impl StatementType {
                 ExpressionType::Literal(AtomicLiteral::Nil) => {
                     interpreter.env.borrow_mut().define(
                         expr.name.clone(),
-                        Rc::new(Literal::Basic(AtomicLiteral::Nil)),
+                        Literal::Basic(AtomicLiteral::Nil),
                     )?;
                     Ok(())
                 }
@@ -179,19 +188,19 @@ impl StatementType {
                 let function = LoxFunction::new(Rc::new(func_props), interpreter);
                 interpreter.env.borrow_mut().define(
                     func_props.name.clone(),
-                    Rc::new(Literal::LoxCallable(Box::new(function))),
+                    Literal::LoxCallable(Rc::new(function)),
                 )?;
                 Ok(())
             }
             StatementType::ReturnStatement(prop) => {
                 let value = match &mut prop.value {
                     Some(expr) => expr.evaluate(interpreter)?,
-                    None => Rc::new(Literal::Basic(AtomicLiteral::Nil)),
+                    None => Literal::Basic(AtomicLiteral::Nil),
                 };
                 Err(LoxError::ReturnValue(value))
             }
             StatementType::ClassStatement(class_prop) => {
-                interpreter.env.borrow_mut().define(class_prop.name.clone(), Rc::new(Literal::Basic(AtomicLiteral::Nil)))?;
+                interpreter.env.borrow_mut().define(class_prop.name.clone(), Literal::Basic(AtomicLiteral::Nil))?;
                 let mut methods = HashMap::new();
                 for method in &class_prop.methods {
                     let _function = LoxFunction::new(Rc::new(match method {
@@ -204,7 +213,7 @@ impl StatementType {
                     };
                 }
                 let class = LoxClass::new(class_prop.name.clone(),methods);
-                interpreter.env.borrow_mut().assign(class_prop.name.clone(), Rc::new(Literal::LoxCallable(Box::new(class))))?;
+                interpreter.env.borrow_mut().assign(class_prop.name.clone(), Literal::LoxCallable(Rc::new(class)))?;
                 Ok(())
             }
             // _ => Ok(()),

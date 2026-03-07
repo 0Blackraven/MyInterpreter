@@ -89,15 +89,17 @@ let a = "outer";
 }
 print a;
 
-let a = "global";
-{
-  fn showA() {
-    print a;
-  }
+class Thing {
+  getCallback() {
+    fn localFunction() {
+      print this;
+    }
 
-  showA();
-  let a = "block";
-  showA();
+    return localFunction;
+  }
 }
+
+let callback = Thing().getCallback();
+callback();
 
 "swap-and-restore" dance,

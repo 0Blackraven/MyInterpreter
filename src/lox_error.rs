@@ -1,11 +1,10 @@
 use crate::token::{Token,Literal};
-use std::rc::Rc;
 
 pub enum LoxError {
     ScanError { token:Token, message: String },
     ParseError { token: Token, message: String },
     RuntimeError { token: Option<Token>, message: String },
-    ReturnValue(Rc<Literal>)
+    ReturnValue(Literal)
 }
 
 impl std::fmt::Display for LoxError {

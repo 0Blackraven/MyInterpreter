@@ -1,12 +1,14 @@
 use crate::lox_class::LoxClass;
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
+use std::{collections::HashMap};
 use crate::token::Literal;
 use crate::lox_error::{LoxResult,LoxError};
 use crate::token::Token;
 
+#[derive(Clone)]
 pub struct LoxInstance {
     class: LoxClass,
-    fields: HashMap<String, Rc<Literal>>
+    fields: HashMap<String, Literal>
 }
 
 impl LoxInstance {
@@ -17,7 +19,7 @@ impl LoxInstance {
         }
     }
 
-    pub fn get(&mut self, name:Token) -> LoxResult<Rc<Literal>> {
+    pub fn get(&self, name:Token) -> LoxResult<Literal> {
         if self.fields.contains_key(&name.lexeme) {
             match self.fields.get(&name.lexeme) {
                 Some(value) => return Ok(value.clone()),
@@ -30,7 +32,7 @@ impl LoxInstance {
         } 
 
         if let Some(method) = self.class.find_method(&name) {
-            return Ok(Rc::new(Literal::LoxCallable(Box::new(method))));
+            return Ok(Literal::LoxCallable(Rc::new(method.bind(self))));
         }
 
         Err(LoxError::RuntimeError {
@@ -39,7 +41,7 @@ impl LoxInstance {
         })
     }
 
-    pub fn set(&mut self, name:Token, value:Rc<Literal>) {
+    pub fn set(&mut self, name:Token, value:Literal) {
         self.fields.insert(name.lexeme, value);
     }
 }

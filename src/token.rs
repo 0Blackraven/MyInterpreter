@@ -1,4 +1,4 @@
-use std::{fmt, rc::Rc, cell::RefCell};
+use std::{fmt, rc::Rc};
 use crate::lox_instance::LoxInstance;
 use crate::callable::Callable;
 
@@ -59,10 +59,11 @@ pub enum AtomicLiteral {
     Bool(bool),
     Nil,
 }
+#[derive(Clone)]
 pub enum Literal {
     Basic(AtomicLiteral),
-    LoxCallable(Box<dyn Callable>),
-    Instance(Rc<RefCell<LoxInstance>>),
+    LoxCallable(Rc<dyn Callable>),
+    Instance(LoxInstance),
 }
 
 impl fmt::Display for Literal {

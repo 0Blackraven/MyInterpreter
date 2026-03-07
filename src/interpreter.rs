@@ -16,7 +16,7 @@ impl Interpreter {
         let globals = Rc::new(RefCell::new(Environment::new(None)));
         let _ = globals.borrow_mut().define(
             Token::new(crate::token::TokenType::IDENTIFIER, "clock".to_string(),0,crate::token::AtomicLiteral::Nil),
-            Rc::new(Literal::LoxCallable(Box::new(Clock))),
+            Literal::LoxCallable(Rc::new(Clock)),
         );
     
         Interpreter {

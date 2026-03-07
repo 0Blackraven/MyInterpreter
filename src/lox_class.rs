@@ -3,9 +3,7 @@ use crate::{interpreter::Interpreter, token::Token};
 use crate::token::Literal;
 use crate::callable::Callable;
 use crate::lox_error::LoxResult;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 #[derive(Clone)]
 pub struct LoxClass {
     name: Token,
@@ -17,7 +15,7 @@ impl LoxClass {
         LoxClass { name , methods}
     }
 
-    pub fn find_method (&mut self, token: &Token) -> Option<LoxFunction> {
+    pub fn find_method (&self, token: &Token) -> Option<LoxFunction> {
         match self.methods.get(&token.lexeme) {
             Some(v) => Some(v.clone()),
             None => None
@@ -30,9 +28,9 @@ impl Callable for LoxClass {
         0
     }
 
-    fn call (&self, _: &mut Interpreter, _:Vec<Rc<Literal>>) -> LoxResult<Rc<Literal>> {
+    fn call (&self, _: &mut Interpreter, _:Vec<Literal>) -> LoxResult<Literal> {
         let instance = crate::lox_instance::LoxInstance::new(self.clone());
-        Ok(Rc::new(Literal::Instance(Rc::new(RefCell::new(instance)))))
+        Ok(Literal::Instance(instance))
     }
 
 }
