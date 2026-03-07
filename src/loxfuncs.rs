@@ -5,13 +5,13 @@ use std::rc::Rc;
 use crate::token::Token;
 use crate::lox_error::{LoxError, LoxResult};
 
+#[derive(Clone)]
 pub struct LoxFunction {
     _name: Token,                   
     params: Vec<Token>,             
     body: Rc<StatementType>,        
     closure: Rc<RefCell<Environment>>
 }
-
 impl LoxFunction {
     pub fn new ( func_props : Rc<&FunctionProps>, interpreter: &mut Interpreter) -> Self {
         return LoxFunction {

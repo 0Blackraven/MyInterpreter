@@ -104,10 +104,26 @@ impl Parser {
             self.var_declaration()
         } else if self.match_token(&[TokenType::FUNCTION]) {
             self.function_declaration(FunctionType::Function)
+        }else if self.match_token(&[TokenType::CLASS]){
+            self.class_declaration()
         } else {
             self.statement()
         };
         result
+    }
+
+    fn class_declaration(&mut self) -> LoxResult<StatementType> {
+        let name = self.consume(TokenType::IDENTIFIER, "Expected class name")?;
+        self.consume(TokenType::LEFTBRACE, "Expected '{' before class body")?;
+        let mut methods: Vec<StatementType> = Vec::new();
+        while !self.check_token(&TokenType::RIGHTBRACE) && !self.is_at_end() {
+            methods.push(self.function_declaration(FunctionType::Method)?);
+        }
+        self.consume(TokenType::RIGHTBRACE, "Expected '}' after class body")?;
+        Ok(StatementType::ClassStatement(ClassProps{
+            name,
+            methods
+        }))
     }
 
     fn function_declaration(&mut self, _func_type: FunctionType) -> LoxResult<StatementType> {
@@ -314,6 +330,13 @@ impl Parser {
                         value: Box::new(value),
                     }))
                 }
+                ExpressionType::Get(get ) => {
+                    Ok(ExpressionType::Set(SetArgs {
+                        name: get.name,
+                        object: get.object,
+                        value: Box::new(value),
+                    }))
+                }
                 _ => Err(LoxError::ParseError {
                     token: equals,
                     message: "Invalid assignment target".to_string(),
@@ -439,6 +462,12 @@ impl Parser {
             loop {
                 if self.match_token(&[TokenType::LEFTPAREN]) {
                     expr = self.finish_call(expr)?;
+                } else if self.match_token(&[TokenType::DOT]) {
+                    let name = self.consume(TokenType::IDENTIFIER, "Expected property name after '.'")?;
+                    expr = ExpressionType::Get(GetArgs {
+                        name,
+                        object: Box::new(expr),
+                    });
                 } else {
                     break;
                 }
@@ -528,7 +557,8 @@ pub fn print_expr(expr: &ExpressionType) -> String {
             "{} {}",
             print_expr(&called.callee),
             called.paren.lexeme,
-        )
+        ),
+        _ => format!("really tired of writing these print functions"),
 
     }
 }

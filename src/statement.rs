@@ -1,5 +1,7 @@
+use crate::lox_class::LoxClass;
 use crate::loxfuncs::LoxFunction;
 use crate::token::{Token,AtomicLiteral};
+use std::collections::HashMap;
 use std::rc::Rc;
 use crate::expression::{ExpressionType, FunctionType, is_truthy};
 use crate::resolver::{Resolver, Resolvable};
@@ -8,6 +10,9 @@ use crate::interpreter::Interpreter;
 use crate::token::Literal;
 use crate::lox_error::LoxError;
 use std::cell::RefCell;
+
+
+// line 193
 
 #[derive(Clone)]
 pub enum StatementType {
@@ -19,6 +24,12 @@ pub enum StatementType {
     Function(FunctionProps),
     WhileStatement(WhileProps),
     ReturnStatement(ReturnProps),
+    ClassStatement(ClassProps),
+}
+#[derive(Clone)]
+pub struct ClassProps {
+    pub name : Token,
+    pub methods : Vec<StatementType>
 }
 #[derive(Clone)]
 pub struct ReturnProps {
@@ -106,6 +117,23 @@ impl Resolvable for StatementType {
                 resolver.resolve(&statement.condition)?;
                 resolver.resolve(&*statement.statement)?;
             }
+            StatementType::ClassStatement(class_prop) => {
+                resolver.declare(&class_prop.name)?;
+                resolver.define(&class_prop.name);
+                for method in &class_prop.methods {
+                    match method {
+                        StatementType::Function(func) => {
+                            resolver.resolve_function(func, FunctionType::Method)?;
+                        }
+                        _ => {
+                            return Err(LoxError::RuntimeError {
+                                token: Some(class_prop.name.clone()),
+                                message: "Only functions can be methods.".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
             // _ => {}
         }
         Ok(())
@@ -162,6 +190,24 @@ impl StatementType {
                 };
                 Err(LoxError::ReturnValue(value))
             }
+            StatementType::ClassStatement(class_prop) => {
+                interpreter.env.borrow_mut().define(class_prop.name.clone(), Rc::new(Literal::Basic(AtomicLiteral::Nil)))?;
+                let mut methods = HashMap::new();
+                for method in &class_prop.methods {
+                    let _function = LoxFunction::new(Rc::new(match method {
+                        StatementType::Function(func) => func,
+                        _ => unreachable!(),
+                    }), interpreter);
+                    match method {
+                        StatementType::Function(func) => methods.insert(func.name.lexeme.clone(),LoxFunction::new(Rc::new(func),interpreter)),
+                        _ => unreachable!(),
+                    };
+                }
+                let class = LoxClass::new(class_prop.name.clone(),methods);
+                interpreter.env.borrow_mut().assign(class_prop.name.clone(), Rc::new(Literal::LoxCallable(Box::new(class))))?;
+                Ok(())
+            }
+            // _ => Ok(()),
         }
     }
 

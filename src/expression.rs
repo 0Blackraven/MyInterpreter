@@ -1,10 +1,3 @@
-// REFACTORING SUMMARY:
-// This file has been updated with the following key changes:
-// 1. Added evaluate method to ExpressionType enum for better code organization
-// 2. The evaluate method takes a mutable interpreter reference for environment access
-// 3. Returns Rc<Literal> to enable shared ownership of values across the interpreter
-// 4. All expression evaluation logic is now centralized in this file
-
 use crate::token::{Token, TokenType, AtomicLiteral};
 use crate::resolver::{Resolver, Resolvable};
 use crate::lox_error::LoxError;
@@ -21,6 +14,8 @@ pub enum ExpressionType {
     Literal(AtomicLiteral),
     Grouping(Box<ExpressionType>),
     Call(CallArgs),
+    Get(GetArgs),
+    Set(SetArgs),
     Variable(Token),
     Assignment(AssignExpression),
     Postfix(PostfixExpression),
@@ -29,7 +24,18 @@ pub enum ExpressionType {
 pub enum FunctionType {
     Function,
     None,
-    
+    Method 
+}
+#[derive(Clone,PartialEq, Eq, Hash)]
+pub struct GetArgs {
+    pub name: Token,
+    pub object: Box<ExpressionType>
+}
+#[derive(Clone,PartialEq, Eq, Hash)]
+pub struct SetArgs {
+    pub name: Token,
+    pub object: Box<ExpressionType>,
+    pub value: Box<ExpressionType>
 }
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub struct CallArgs {
@@ -71,27 +77,32 @@ impl Resolvable for ExpressionType {
             ExpressionType::Assignment(assignment) => {
                 resolver.resolve(&*assignment.value)?;
                 resolver.resolve_local(self, &assignment.name)?;
-            }
+            },
             ExpressionType::Binary(binary) => {
                 resolver.resolve(&*binary.left)?;
                 resolver.resolve(&*binary.right)?;
-            }
+            },
             ExpressionType::Call(call) => {
                 resolver.resolve(&*call.callee)?;
                 for arg in &call.args{
                     resolver.resolve(&**arg)?;
                 }            
-            }
+            },
             ExpressionType::Grouping(group) => {
                 resolver.resolve(&**group)?;
-            }
+            },
             ExpressionType::Literal(_) => {},
             ExpressionType::Logical(logic) => {
                 resolver.resolve(&*logic.left)?;
                 resolver.resolve(&*logic.right)?;
-            }
+            },
             ExpressionType::Unary(unary) => {
                 resolver.resolve(&*unary.right)?;
+            },
+            ExpressionType::Get(get ) => resolver.resolve(get.object.as_ref())?,
+            ExpressionType::Set(set) => {
+                resolver.resolve(set.object.as_ref())?;
+                resolver.resolve(set.value.as_ref())?;
             }
             _ => {}
         }
@@ -214,6 +225,39 @@ impl ExpressionType {
                         message: "Postfix operators can only be applied to variables".to_string(),
                     }),
             },
+
+            ExpressionType::Get(get) => {
+                let object = get.object.evaluate(interpreter)?;
+                match object.as_ref() {
+                    Literal::Instance(i) => {
+                        let result = i.borrow_mut().get(get.name.clone())?;
+                        Ok(result)
+                    }
+                    _ => {
+                        return Err(LoxError::RuntimeError {
+                            token: Some(get.name.clone()),
+                            message: "Only instances have properties".to_string(),
+                        })
+                    }
+                }
+            }
+
+            ExpressionType::Set(set) => {
+                let object = set.object.evaluate(interpreter)?;
+                let value = set.value.evaluate(interpreter)?;
+                match object.as_ref() {
+                    Literal::Instance(i) => {
+                        i.borrow_mut().set(set.name.clone(), value.clone());
+                        Ok(value)
+                    }
+                    _ => {
+                        Err(LoxError::RuntimeError {
+                            token: Some(set.name.clone()),
+                            message: "Only instances have fields".to_string(),
+                        })
+                    }
+                }
+            }
 
             ExpressionType::Unary(expr) => {
                 let right = &expr.right.evaluate(interpreter)?;

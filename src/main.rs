@@ -9,8 +9,10 @@ mod statement;
 mod callable;
 mod clock;
 mod lox_error;
+mod lox_class;
 mod resolver;
 mod loxfuncs;
+mod lox_instance;
 use terminal_reader::terminal_reader;
 use lox_error::{LoxResult};
 
