@@ -72,6 +72,13 @@ pub fn scanner(input: &str) -> LoxResult<Vec<Token>> {
             '\0' => {
                 break;
             }
+            ':' => {
+                push_token(
+                    &mut tokens,
+                    Token::new(TokenType::COLON,":".to_string(),current_line, AtomicLiteral::Nil),
+                    &mut token_lexeme
+                )
+            }
             '.' => {
                 push_token(
                     &mut tokens,

@@ -1,4 +1,4 @@
-use crate::expression::{ExpressionType,FunctionType};
+use crate::expression::{ClassType, ExpressionType, FunctionType};
 use crate::interpreter::Interpreter;
 use crate::lox_error::{LoxError, LoxResult};
 use crate::statement::FunctionProps;
@@ -10,6 +10,7 @@ pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     pub scopes: RefCell<Vec<Scope>>,
     pub current_function: FunctionType,
+    pub current_class: ClassType
 }
 
 type Scope = HashMap<String, bool>;
@@ -33,6 +34,7 @@ impl<'a> Resolver<'a> {
             interpreter,
             scopes: Default::default(),
             current_function: FunctionType::None,
+            current_class: ClassType::None
         }
     }
 

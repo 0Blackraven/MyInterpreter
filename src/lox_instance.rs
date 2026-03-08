@@ -31,7 +31,7 @@ impl LoxInstance {
             }   
         } 
 
-        if let Some(method) = self.class.find_method(&name) {
+        if let Some(method) = self.class.find_method(&name.lexeme) {
             return Ok(Literal::LoxCallable(Rc::new(method.bind(self))));
         }
 

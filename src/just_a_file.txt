@@ -1,3 +1,13 @@
+This file contains all the grammar from the start till the end while i read the book and added features one after other
+Thank You
+
+
+Special meanings ->
+      a|b => can be either a or b;
+      (a)* => at min 1 a is there;
+      (a)? => at most 1 a is there or none; 
+
+
 // this grammar is bad and has ambiguity
 
 expression     → literal
@@ -41,7 +51,7 @@ primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression "
 
 program                → (declaration)* EOF ;
 declaration            → letDeclaration | statement | fnDeclaration | classDeclaration ;
-classDeclaration       → "class" IDENTIFIER "{" function* "}"
+classDeclaration       → "class" IDENTIFIER (":" IDENTIFIER)? "{" function* "}"
 fnDeclaration          → "fn" function;
 function               → identifier "(" parameters? ")" block ;
 parameters             → identifier ("," identifier)* ;
@@ -55,51 +65,5 @@ whileStatement         → "while" "(" expression ")" statement ;
 forStatement           → "for" "(" ( varDecl | exprStmt | ";" )
                          expression? ";"
                          expression? ")" statement ;
-
-
-
-
-fn fib(n) {
-  if (n <= 1) return n;
-  return fib(n - 2) + fib(n - 1);
-}
-
-for (let i = 0; i < 20; i = i + 1) {
-  print fib(i);
-}
-
-fn makeCounter() {
-  let i = 0;
-  fn count() {
-    i = i + 1;
-    print i;
-  }
-
-  return count;
-}
-
-let counter = makeCounter();
-counter(); // "1".
-counter(); // "2".
-
-let a = "outer";
-{
-  print a;
-  let a = "inner";
-}
-print a;
-
-class Thing {
-  getCallback() {
-    fn localFunction() {
-      print this;
-    }
-
-    return localFunction;
-  }
-}
-
-let callback = Thing().getCallback();
-callback();
 
 "swap-and-restore" dance,

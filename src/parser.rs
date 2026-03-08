@@ -114,6 +114,11 @@ impl Parser {
 
     fn class_declaration(&mut self) -> LoxResult<StatementType> {
         let name = self.consume(TokenType::IDENTIFIER, "Expected class name")?;
+        let mut super_class = None;
+        if self.match_token(&[TokenType::COLON]) {
+            self.consume(TokenType::IDENTIFIER, "Expected a superclass name")?;
+            super_class = Some(ExpressionType::Variable(self.previous()));
+        }
         self.consume(TokenType::LEFTBRACE, "Expected '{' before class body")?;
         let mut methods: Vec<StatementType> = Vec::new();
         while !self.check_token(&TokenType::RIGHTBRACE) && !self.is_at_end() {
@@ -122,7 +127,8 @@ impl Parser {
         self.consume(TokenType::RIGHTBRACE, "Expected '}' after class body")?;
         Ok(StatementType::ClassStatement(ClassProps{
             name,
-            methods
+            methods,
+            superclass:super_class
         }))
     }
 

@@ -3,7 +3,7 @@ use crate::loxfuncs::LoxFunction;
 use crate::token::{Token,AtomicLiteral};
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::expression::{ExpressionType, FunctionType, is_truthy};
+use crate::expression::{ClassType, ExpressionType, FunctionType, is_truthy};
 use crate::resolver::{Resolvable, Resolver};
 use crate::lox_error::LoxResult;
 use crate::interpreter::Interpreter;
@@ -29,7 +29,9 @@ pub enum StatementType {
 #[derive(Clone)]
 pub struct ClassProps {
     pub name : Token,
-    pub methods : Vec<StatementType>
+    pub methods : Vec<StatementType>,
+    pub superclass : Option<ExpressionType>
+
 }
 #[derive(Clone)]
 pub struct ReturnProps {
@@ -109,6 +111,12 @@ impl Resolvable for StatementType {
                     });
                 }
                 if let Some(value) = &statement.value {
+                    if resolver.current_function == FunctionType::Initializer {
+                        return Err(LoxError::RuntimeError {
+                            token: Some(statement._keyword.clone()),
+                            message: "Cannot return from a constructor".to_string() 
+                        })
+                    }
                     resolver.resolve(value)?;
                 }
             }
@@ -118,6 +126,10 @@ impl Resolvable for StatementType {
                 resolver.resolve(&*statement.statement)?;
             }
             StatementType::ClassStatement(class_prop) => {
+                let enclosing_class = resolver.current_class.clone();
+                let mut declaration = FunctionType::Method;
+                resolver.current_class = ClassType::Class;
+
                 resolver.declare(&class_prop.name)?;
                 resolver.define(&class_prop.name);
                 resolver.begin_scope();
@@ -131,7 +143,10 @@ impl Resolvable for StatementType {
                 for method in &class_prop.methods {
                     match method {
                         StatementType::Function(func) => {
-                            resolver.resolve_function(func, FunctionType::Method)?;
+                            if func.name.lexeme == "init".to_string() {
+                                declaration = FunctionType::Initializer;
+                            }
+                            resolver.resolve_function(func, declaration.clone())?;
                         }
                         _ => {
                             return Err(LoxError::RuntimeError {
@@ -142,6 +157,7 @@ impl Resolvable for StatementType {
                     }
                 }
                 resolver.end_scope();
+                resolver.current_class = enclosing_class;
             }
             // _ => {}
         }
@@ -185,7 +201,7 @@ impl StatementType {
                 Self::evaluate_while(wild, interpreter)
             },
             StatementType::Function(func_props) => {
-                let function = LoxFunction::new(Rc::new(func_props), interpreter);
+                let function = LoxFunction::new(Rc::new(func_props), interpreter, false);
                 interpreter.env.borrow_mut().define(
                     func_props.name.clone(),
                     Literal::LoxCallable(Rc::new(function)),
@@ -203,12 +219,12 @@ impl StatementType {
                 interpreter.env.borrow_mut().define(class_prop.name.clone(), Literal::Basic(AtomicLiteral::Nil))?;
                 let mut methods = HashMap::new();
                 for method in &class_prop.methods {
-                    let _function = LoxFunction::new(Rc::new(match method {
-                        StatementType::Function(func) => func,
-                        _ => unreachable!(),
-                    }), interpreter);
                     match method {
-                        StatementType::Function(func) => methods.insert(func.name.lexeme.clone(),LoxFunction::new(Rc::new(func),interpreter)),
+                        StatementType::Function(func) => {
+                            let is_initializer = func.name.lexeme == "init".to_string();
+                            let function = LoxFunction::new(Rc::new(func), interpreter, is_initializer);
+                            methods.insert(func.name.lexeme.clone(),function)
+                        },
                         _ => unreachable!(),
                     };
                 }

@@ -20,7 +20,7 @@ pub enum TokenType {
 
     // Keywords.
     AND, CLASS, ELSE, FALSE, FUNCTION, FOR, IF, NIL, OR,
-    PRINT, RETURN, SUPER, THIS, TRUE, LET, WHILE,
+    PRINT, RETURN, SUPER, THIS, TRUE, LET, WHILE, COLON,
 
     EOF
 }
@@ -43,6 +43,7 @@ impl fmt::Display for TokenType {
             TokenType::LESSEQUAL => "<=",
             TokenType::DECREMENTOR => "--",
             TokenType::INCREMENTOR => "++",
+            TokenType::COLON => ":",
             _ => return write!(f, "{:?}", self), // fallback for non-operators
         };
 

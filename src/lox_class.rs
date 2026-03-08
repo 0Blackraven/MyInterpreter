@@ -15,8 +15,8 @@ impl LoxClass {
         LoxClass { name , methods}
     }
 
-    pub fn find_method (&self, token: &Token) -> Option<LoxFunction> {
-        match self.methods.get(&token.lexeme) {
+    pub fn find_method (&self, token: &str) -> Option<LoxFunction> {
+        match self.methods.get(token) {
             Some(v) => Some(v.clone()),
             None => None
         }
@@ -25,11 +25,18 @@ impl LoxClass {
 
 impl Callable for LoxClass {
     fn arity (&self) -> usize {
-        0
+        let initializer = self.find_method("init");
+        match initializer {
+            Some(result ) => result.arity(),
+            None => 0
+        }
     }
 
-    fn call (&self, _: &mut Interpreter, _:Vec<Literal>) -> LoxResult<Literal> {
+    fn call (&self, interpreter: &mut Interpreter, v:Vec<Literal>) -> LoxResult<Literal> {
         let instance = crate::lox_instance::LoxInstance::new(self.clone());
+        if let Some(initializer) = self.find_method("init") {
+            let _ = initializer.bind(&instance).call(interpreter, v);
+        }
         Ok(Literal::Instance(instance))
     }
 

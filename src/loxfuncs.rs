@@ -11,15 +11,17 @@ pub struct LoxFunction {
     _name: Token,                   
     params: Vec<Token>,             
     body: Rc<StatementType>,        
-    closure: Rc<RefCell<Environment>>
+    closure: Rc<RefCell<Environment>>,
+    is_initializer: bool
 }
 impl LoxFunction {
-    pub fn new ( func_props : Rc<&FunctionProps>, interpreter: &mut Interpreter) -> Self {
+    pub fn new ( func_props : Rc<&FunctionProps>, interpreter: &mut Interpreter, is_initializer: bool) -> Self {
         return LoxFunction {
             _name: func_props.name.clone(),      
             params: func_props.params.clone(),   
             body: func_props.body.clone(),       
-            closure: interpreter.env.clone() 
+            closure: interpreter.env.clone(),
+            is_initializer
         };
     }
 
@@ -32,7 +34,8 @@ impl LoxFunction {
             _name: self._name.clone(), 
             params: self.params.clone(), 
             body: self.body.clone(), 
-            closure: Rc::new(RefCell::new(env)) 
+            closure: Rc::new(RefCell::new(env)),
+            is_initializer: self.is_initializer 
         }    
     }
 }
@@ -56,16 +59,26 @@ impl Callable for LoxFunction {
         }
 
         let mut body_clone = (*self.body).clone();
-        let result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
-        
+        let mut result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
+
         interpreter.env = previous;
         
         match result {
-            Ok(()) => Ok(Literal::Basic(crate::token::AtomicLiteral::Nil)),
+            Ok(()) => {
+                if self.is_initializer {
+                    self.closure.borrow_mut().get_at(0, "this")?;
+                }
+                Ok(Literal::Basic(crate::token::AtomicLiteral::Nil))
+            },
             Err(e) => {
                 match e {
-                    LoxError::ReturnValue(v) => Ok(v),
-                    _ => Err(e),
+                    LoxError::ReturnValue(v) => {
+                        if self.is_initializer {
+                            self.closure.borrow_mut().get_at(0, "this")?;
+                        }
+                        Ok(v)
+                    },
+                    _ => return Err(e),
                 }
             }
         }

@@ -24,8 +24,15 @@ pub enum ExpressionType {
 pub enum FunctionType {
     Function,
     None,
-    Method 
+    Method,
+    Initializer
 }
+#[derive(Clone,PartialEq, Eq, Hash)]
+pub enum ClassType {
+    None,
+    Class
+}
+
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub struct GetArgs {
     pub name: Token,
@@ -104,7 +111,14 @@ impl Resolvable for ExpressionType {
                 resolver.resolve(set.object.as_ref())?;
                 resolver.resolve(set.value.as_ref())?;
             },
-            ExpressionType::This(this) => resolver.resolve_local(self, this)?,
+            ExpressionType::This(this) => {
+                if resolver.current_class != ClassType::Class {
+                    return Err(LoxError::ParseError {
+                        token: this.clone(), 
+                        message: "Cannot use this outside of methods or class".to_string() })
+                }
+                resolver.resolve_local(self, this)?
+            },
             _ => {}
         }
         Ok(())
