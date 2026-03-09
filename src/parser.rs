@@ -243,6 +243,7 @@ impl Parser {
     
         Ok(body)
     }
+
     
     fn while_statement(&mut self) -> LoxResult<StatementType> {
         self.consume(TokenType::LEFTPAREN, "expected (")?;

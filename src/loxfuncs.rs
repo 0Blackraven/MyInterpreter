@@ -52,16 +52,14 @@ impl Callable for LoxFunction {
     ) -> LoxResult<Literal> {
         let previous = Rc::clone(&interpreter.env);
         
-        let closure= Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
+        let closure= Rc::new(RefCell::new(Environment::new(Some(previous))));
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            interpreter.env.borrow_mut().define(param.clone(), arg)?;
+            closure.borrow_mut().define(param.clone(), arg)?;
         }
 
         let mut body_clone = (*self.body).clone();
         let result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
-
-        interpreter.env = previous;
         
         match result {
             Ok(()) => {
@@ -78,12 +76,12 @@ impl Callable for LoxFunction {
                         }
                         Ok(v)
                     },
-                    _ => return Err(e),
+                    _ => {print!("executed this");return Err(e)},
                 }
             }
         }
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

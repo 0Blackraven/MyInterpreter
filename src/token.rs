@@ -53,7 +53,7 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Clone,PartialEq, Eq, Hash)]
+#[derive(Clone,PartialEq, Eq, Hash,Debug)]
 #[allow(dead_code)]
 
 pub enum AtomicLiteral {

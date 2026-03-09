@@ -68,17 +68,14 @@ forStatement           → "for" "(" ( varDecl | exprStmt | ";" )
 
 "swap-and-restore" dance,
 
-class Doughnut {
-  cook() {
-    print "Fry until golden brown.";
-  }
+fn fib(n) {
+  if (n < 2) return n;
+  return fib(n - 1) + fib(n - 2);
 }
 
-class BostonCream : Doughnut {
-  cook() {
-    super.cook();
-    print "Pipe full of custard and coat with chocolate.";
-  }
-}
+let before = clock();
+print fib(30);
+let after = clock();
 
-BostonCream().cook();
+print "Elapsed time:";
+print after - before;

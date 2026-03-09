@@ -170,7 +170,12 @@ impl ExpressionType {
         let varibale_lookup = |name: &Token, expr: &ExpressionType| {
             let distance = interpreter.local.get(expr);
             match distance {
-                Some(d) => interpreter.env.borrow().get_at(*d, &name.lexeme),
+                Some(d) => {
+                    match interpreter.env.borrow().get_at(*d, &name.lexeme) {
+                        Ok(value) => Ok(value),
+                        Err(_) => interpreter.env.borrow().get(&name)
+                    }
+                },
                 None => interpreter.global.borrow().get(&name),
             }
         };
