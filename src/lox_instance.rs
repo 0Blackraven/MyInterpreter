@@ -1,6 +1,5 @@
 use crate::lox_class::LoxClass;
-use std::rc::Rc;
-use std::{collections::HashMap};
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 use crate::token::Literal;
 use crate::lox_error::{LoxResult,LoxError};
 use crate::token::Token;
@@ -8,20 +7,20 @@ use crate::token::Token;
 #[derive(Clone)]
 pub struct LoxInstance {
     class: LoxClass,
-    fields: HashMap<String, Literal>
+    fields: Rc<RefCell<HashMap<String, Literal>>>
 }
 
 impl LoxInstance {
     pub fn new (class: LoxClass) -> Self {
         LoxInstance { 
             class,
-            fields: HashMap::new(),
+            fields: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn get(&self, name:Token) -> LoxResult<Literal> {
-        if self.fields.contains_key(&name.lexeme) {
-            match self.fields.get(&name.lexeme) {
+        if self.fields.borrow().contains_key(&name.lexeme) {
+            match self.fields.borrow().get(&name.lexeme) {
                 Some(value) => return Ok(value.clone()),
                 None => return Err(LoxError::RuntimeError {
                     token: Some(name),
@@ -41,7 +40,7 @@ impl LoxInstance {
         })
     }
 
-    pub fn set(&mut self, name:Token, value:Literal) {
-        self.fields.insert(name.lexeme, value);
+    pub fn set(&self, name:Token, value:Literal) {
+        self.fields.borrow_mut().insert(name.lexeme, value);
     }
 }

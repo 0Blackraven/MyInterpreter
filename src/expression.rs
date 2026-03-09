@@ -120,7 +120,7 @@ impl Resolvable for ExpressionType {
                 resolver.resolve(set.value.as_ref())?;
             },
             ExpressionType::This(this) => {
-                if resolver.current_class != ClassType::Class {
+                if resolver.current_class == ClassType::None {
                     return Err(LoxError::ParseError {
                         token: this.clone(), 
                         message: "Cannot use this outside of methods or class".to_string() })
@@ -156,10 +156,9 @@ pub fn is_truthy(value: &Literal) -> bool {
 pub fn is_equal(a: &Literal, b: &Literal) -> LoxResult<bool> {
     match (a, b) {
         (Literal::Basic(a), Literal::Basic(b)) => Ok(a == b),
-        _ => Err(LoxError::RuntimeError {
-            token: None,
-            message: "Cannot compare callable objects".to_string(),
-        })
+        (Literal::Basic(AtomicLiteral::Nil), _) => Ok(false),
+        (_, Literal::Basic(AtomicLiteral::Nil)) => Ok(false),        
+        _ => Ok(false),
     }
 }
 
@@ -305,7 +304,7 @@ impl ExpressionType {
                 let object = set.object.evaluate(interpreter)?;
                 let value = set.value.evaluate(interpreter)?;
                 match object {
-                    Literal::Instance(mut i) => {
+                    Literal::Instance(i) => {
                         i.set(set.name.clone(), value.clone());
                         Ok(value)
                     }

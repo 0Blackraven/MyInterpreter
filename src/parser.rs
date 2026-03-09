@@ -465,22 +465,20 @@ impl Parser {
     fn postfix(&mut self) -> LoxResult<ExpressionType> {
         let mut expr = self.primary()?;
     
-        if self.check_token(&TokenType::LEFTPAREN) {
-            loop {
-                if self.match_token(&[TokenType::LEFTPAREN]) {
-                    expr = self.finish_call(expr)?;
-                } else if self.match_token(&[TokenType::DOT]) {
-                    let name = self.consume(TokenType::IDENTIFIER, "Expected property name after '.'")?;
-                    expr = ExpressionType::Get(GetArgs {
-                        name,
-                        object: Box::new(expr),
-                    });
-                } else {
-                    break;
-                }
+        loop {
+            if self.match_token(&[TokenType::LEFTPAREN]) {
+                expr = self.finish_call(expr)?;
+            } else if self.match_token(&[TokenType::DOT]) {
+                let name = self.consume(TokenType::IDENTIFIER, "Expected property name after '.'")?;
+                expr = ExpressionType::Get(GetArgs {
+                    name,
+                    object: Box::new(expr),
+                });
+            } else {
+                break;
             }
-            return Ok(expr);
         }
+
         if self.match_token(&[TokenType::INCREMENTOR, TokenType::DECREMENTOR]) {
             match expr {
                 ExpressionType::Variable(_) => {

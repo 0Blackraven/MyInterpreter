@@ -50,9 +50,7 @@ impl Callable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<Literal>,
     ) -> LoxResult<Literal> {
-        let previous = Rc::clone(&interpreter.env);
-        
-        let closure= Rc::new(RefCell::new(Environment::new(Some(previous))));
+        let closure = Rc::new(RefCell::new(Environment::new(Some(self.closure.clone()))));
 
         for (param, arg) in self.params.iter().zip(arguments) {
             closure.borrow_mut().define(param.clone(), arg)?;
@@ -76,7 +74,7 @@ impl Callable for LoxFunction {
                         }
                         Ok(v)
                     },
-                    _ => {print!("executed this");return Err(e)},
+                    _ => {return Err(e)},
                 }
             }
         }
