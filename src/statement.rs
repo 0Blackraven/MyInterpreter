@@ -132,6 +132,23 @@ impl Resolvable for StatementType {
 
                 resolver.declare(&class_prop.name)?;
                 resolver.define(&class_prop.name);
+                if let Some(superclass) = &class_prop.superclass {
+                    match superclass {
+                        ExpressionType::Variable(v) => {
+                            if v.lexeme == class_prop.name.lexeme{
+                                return Err(LoxError::RuntimeError { 
+                                    token: Some(v.clone()), 
+                                    message: "A class cannot inherit from itself".to_string() 
+                                })
+                            }
+                            resolver.resolve(superclass)?
+                        },
+                        _ => return Err(LoxError::RuntimeError {
+                            token: Some(class_prop.name.clone()), 
+                            message: "wrong superclass assignment".to_string() 
+                        })
+                    }
+                }
                 resolver.begin_scope();
                 {
                     let mut scopes = resolver.scopes.borrow_mut();
@@ -216,6 +233,10 @@ impl StatementType {
                 Err(LoxError::ReturnValue(value))
             }
             StatementType::ClassStatement(class_prop) => {
+                let mut superclass = None;
+                if let Some(result) = &class_prop.superclass {
+                    superclass = Some(Rc::new(result.evaluate(interpreter)?.as_class()?));
+                } 
                 interpreter.env.borrow_mut().define(class_prop.name.clone(), Literal::Basic(AtomicLiteral::Nil))?;
                 let mut methods = HashMap::new();
                 for method in &class_prop.methods {
@@ -228,7 +249,7 @@ impl StatementType {
                         _ => unreachable!(),
                     };
                 }
-                let class = LoxClass::new(class_prop.name.clone(),methods);
+                let class = LoxClass::new(class_prop.name.clone(),methods, superclass);
                 interpreter.env.borrow_mut().assign(class_prop.name.clone(), Literal::LoxCallable(Rc::new(class)))?;
                 Ok(())
             }

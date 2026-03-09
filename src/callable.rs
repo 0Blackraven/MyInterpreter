@@ -5,5 +5,6 @@ use crate::lox_error::LoxResult;
 pub trait Callable {
     fn arity(&self) ->usize;
     fn call(&self, env:&mut Interpreter ,args:Vec<Literal>) -> LoxResult<Literal>;
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 

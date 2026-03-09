@@ -1,6 +1,8 @@
 use std::{fmt, rc::Rc};
+use crate::lox_error::{LoxError, LoxResult};
 use crate::lox_instance::LoxInstance;
 use crate::callable::Callable;
+use crate::lox_class::LoxClass;
 
 #[derive(Debug,Clone,PartialEq, Eq, Hash)]
 pub enum TokenType {
@@ -124,5 +126,17 @@ impl Token {
         }
     }
 }
- 
- 
+
+impl Literal {
+    pub fn as_class (&self) -> LoxResult<LoxClass> {
+        match self {
+            Literal::LoxCallable(v) => {
+                v.as_any().downcast_ref::<LoxClass>().ok_or_else(|| LoxError::RuntimeError { 
+                    token: None, 
+                    message: "Target is not a class.".to_string() 
+                }).cloned()
+            },
+            _ => Err(LoxError::RuntimeError { token: None, message: "not a class".to_string() })
+        }
+    }
+}

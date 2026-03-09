@@ -67,3 +67,17 @@ forStatement           → "for" "(" ( varDecl | exprStmt | ";" )
                          expression? ")" statement ;
 
 "swap-and-restore" dance,
+
+class Doughnut {
+  cook() {
+    print "Fry until golden brown.";
+  }
+}
+
+class BostonCream : Doughnut {
+  cook() {
+    print "Fry golden brown.";
+  }  
+}
+
+BostonCream().cook();

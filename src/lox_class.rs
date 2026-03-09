@@ -4,21 +4,29 @@ use crate::token::Literal;
 use crate::callable::Callable;
 use crate::lox_error::LoxResult;
 use std::collections::HashMap;
+use std::rc::Rc;
 #[derive(Clone)]
 pub struct LoxClass {
     name: Token,
-    methods: HashMap<String, LoxFunction>
+    methods: HashMap<String, LoxFunction>,
+    superclass: Option<Rc<LoxClass>>
 }
 
 impl LoxClass {
-    pub fn new(name: Token, methods: HashMap<String, LoxFunction>) -> Self {
-        LoxClass { name , methods}
+    pub fn new(name: Token, methods: HashMap<String, LoxFunction>, superclass: Option<Rc<LoxClass>>) -> Self {
+        LoxClass { name , methods, superclass}
     }
 
     pub fn find_method (&self, token: &str) -> Option<LoxFunction> {
         match self.methods.get(token) {
             Some(v) => Some(v.clone()),
-            None => None
+            None => {
+                if let Some(superclass) = &self.superclass {
+                    superclass.find_method(token)
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -40,4 +48,7 @@ impl Callable for LoxClass {
         Ok(Literal::Instance(instance))
     }
 
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }

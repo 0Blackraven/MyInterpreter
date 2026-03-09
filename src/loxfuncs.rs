@@ -59,7 +59,7 @@ impl Callable for LoxFunction {
         }
 
         let mut body_clone = (*self.body).clone();
-        let mut result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
+        let result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
 
         interpreter.env = previous;
         
@@ -82,6 +82,10 @@ impl Callable for LoxFunction {
                 }
             }
         }
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
