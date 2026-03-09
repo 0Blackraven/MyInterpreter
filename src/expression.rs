@@ -4,6 +4,7 @@ use crate::lox_error::LoxError;
 use crate::lox_error::LoxResult;
 use crate::token::Literal;
 use crate::interpreter::{Interpreter};
+use std::rc::Rc;
 
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub enum ExpressionType {
@@ -16,6 +17,7 @@ pub enum ExpressionType {
     Call(CallArgs),
     Get(GetArgs),
     Set(SetArgs),
+    Super(SuperArgs),
     Variable(Token),
     Assignment(AssignExpression),
     Postfix(PostfixExpression),
@@ -30,9 +32,15 @@ pub enum FunctionType {
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub enum ClassType {
     None,
-    Class
+    Class,
+    SubClass
 }
 
+#[derive(Clone,PartialEq, Eq, Hash)]
+pub struct SuperArgs {
+    pub keyword: Token,
+    pub method: Token
+}
 #[derive(Clone,PartialEq, Eq, Hash)]
 pub struct GetArgs {
     pub name: Token,
@@ -119,6 +127,17 @@ impl Resolvable for ExpressionType {
                 }
                 resolver.resolve_local(self, this)?
             },
+            ExpressionType::Super(superb) => {
+                match resolver.current_class {
+                    ClassType::None => {
+                        Err(LoxError::RuntimeError { token: Some(superb.keyword.clone()), message: String::from("Cannot use super outside of a class") })?
+                    }
+                    ClassType::Class => {
+                        Err(LoxError::RuntimeError { token: Some(superb.keyword.clone()), message: String::from("Cannot use super in a class with no superclass") })?
+                    }
+                    ClassType::SubClass => resolver.resolve_local(self, &superb.keyword)?
+                }
+            }
             _ => {}
         }
         Ok(())
@@ -158,6 +177,24 @@ impl ExpressionType {
 
         match self {
             ExpressionType::This(this) => varibale_lookup(this,self),
+
+            ExpressionType::Super(sup) =>{
+                let distance = interpreter.local.get(self);
+                match distance {
+                    Some(distance) => {
+                        let superclass = interpreter.env.borrow().get_at(*distance, "super")?.as_class()?;
+                        let object = interpreter.env.borrow().get_at(*distance-1, "this")?.as_instance()?;
+                        let method = superclass.find_method(&sup.method.lexeme);
+                        match method {
+                            None => Err(LoxError::RuntimeError { token: Some(sup.method.clone()), message: "method not found".to_string()}),
+                            Some(method) => Ok(Literal::LoxCallable(Rc::new(method.bind(&object))))
+                        }
+                    }
+                    None => {
+                        unreachable!()
+                    }
+                }
+            }
 
             ExpressionType::Literal(value) => Ok(Literal::Basic(value.clone())),
 

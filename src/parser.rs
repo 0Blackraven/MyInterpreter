@@ -520,6 +520,11 @@ impl Parser {
             Ok(ExpressionType::Variable(self.previous()))
         } else if self.match_token(&[TokenType::THIS]) {
             Ok(ExpressionType::This(self.previous()))
+        } else if self.match_token(&[TokenType::SUPER]) {
+            let keyword = self.previous();
+            self.consume(TokenType::DOT, "Expected a '.' after super")?;
+            let method = self.consume(TokenType::IDENTIFIER, "Method name missing")?;
+            Ok(ExpressionType::Super(SuperArgs{keyword,method}))
         } else {
             Err(self.error(self.peek(), "Expect expression."))
         }

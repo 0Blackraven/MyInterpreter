@@ -139,4 +139,12 @@ impl Literal {
             _ => Err(LoxError::RuntimeError { token: None, message: "not a class".to_string() })
         }
     }
+    pub fn as_instance (&self) -> LoxResult<LoxInstance> {
+        match self {
+            Literal::Instance(v) => {
+                Ok(v.clone())
+            },
+            _ => Err(LoxError::RuntimeError { token: None, message: "not a instance".to_string() })
+        }
+    }
 }

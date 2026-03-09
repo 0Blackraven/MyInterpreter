@@ -45,7 +45,7 @@ factor         → unary ( ("/" | "*") unary )* ;
 unary          → ("!" | "-") unary | postfix ;
 postfix        → primary ("++" | "--")? | ( "(" arguments ")" | "." IDENTIFIER )* ;
 arguments      → expression ("," expression)* ;
-primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | identifier ;
+primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | identifier | "super" . IDENTIFIER ;
 
 // new addition to flow 
 
@@ -69,15 +69,16 @@ forStatement           → "for" "(" ( varDecl | exprStmt | ";" )
 "swap-and-restore" dance,
 
 class Doughnut {
-  cook() {
-    print "Fry until golden brown.";
-  }
+  cook() {
+    print "Fry until golden brown.";
+  }
 }
 
 class BostonCream : Doughnut {
-  cook() {
-    print "Fry golden brown.";
-  }  
+  cook() {
+    super.cook();
+    print "Pipe full of custard and coat with chocolate.";
+  }
 }
 
 BostonCream().cook();
