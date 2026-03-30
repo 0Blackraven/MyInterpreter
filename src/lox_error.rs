@@ -4,6 +4,7 @@ pub enum LoxError {
     ScanError { token:Token, message: String },
     ParseError { token: Token, message: String },
     RuntimeError { token: Option<Token>, message: String },
+    GeneralError { message: String },
     ReturnValue(Literal)
 }
 
@@ -20,7 +21,8 @@ impl std::fmt::Display for LoxError {
                     write!(f, "{}", message)
                 }
             }
-            LoxError::ReturnValue(_) => write!(f, "ReturnValue error" ) // should not reach this 
+            LoxError::ReturnValue(_) => write!(f, "ReturnValue error" ), // should not reach this 
+            LoxError::GeneralError { message } => write!(f, "{}", message),
         }
     }
 }

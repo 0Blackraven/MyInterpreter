@@ -15,6 +15,9 @@ mod loxfuncs;
 mod lox_instance;
 use terminal_reader::terminal_reader;
 use lox_error::{LoxResult};
+use std::env;
+
+use crate::lox_error::LoxError;
 
 fn execute_error(line: u32, message: &str) {
     eprintln!("Error at line {}: {}", line, message);
@@ -22,16 +25,36 @@ fn execute_error(line: u32, message: &str) {
 
 
 fn main() {
-    let input = terminal_reader();
-    match input {
-        Ok(result) => {
-            if let Err(e) = run(&result) {
-                eprintln!("{}", e)
-            }
-        }
-        Err(e) => execute_error(0, &format!("Scanner error: {}", e)),
-    }
+    let args: Vec<String> = env::args().collect();
 
+    if args.len() > 2 {
+        eprintln!("Usage: {} [script]", args[0]);
+        std::process::exit(64);
+    } else if args.len() == 2 {
+        if let Err(e) = file_reader(&args[1]) {
+            eprintln!("{}", e);
+        }
+    } else {
+        let input = terminal_reader();
+        match input {
+            Ok(result) => {
+                if let Err(e) = run(&result) {
+                    eprintln!("{}", e)
+                }
+            }
+            Err(e) => execute_error(0, &format!("Scanner error: {}", e)),
+        }
+    }
+}
+
+fn file_reader(path: &str)-> LoxResult<()> {
+    let source = std::fs::read_to_string(path);
+    match source {
+        Ok(result) => run(&result),
+        Err(e) => {
+            return Err(LoxError::GeneralError { message: format!("Failed to read file: {}", e) })
+        }
+    }
 }
 
 fn run(source: &str) -> LoxResult<()> {
