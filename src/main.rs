@@ -27,13 +27,13 @@ fn execute_error(line: u32, message: &str) {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() > 2 {
-        eprintln!("Usage: {} [script]", args[0]);
-        std::process::exit(64);
-    } else if args.len() == 2 {
+    if args.len() == 2 {
         if let Err(e) = file_reader(&args[1]) {
             eprintln!("{}", e);
         }
+    } else if args.len() > 2 {
+        eprintln!("Usage: {} [script]", args[0]);
+        std::process::exit(64);
     } else {
         let input = terminal_reader();
         match input {
@@ -64,6 +64,6 @@ fn run(source: &str) -> LoxResult<()> {
     let mut interpreter = interpreter::Interpreter::new();
     let mut resolver = resolver::Resolver::new(&mut interpreter);
     resolver.resolve(&statements)?;
-    interpreter.interpreter(statements)?;
+    interpreter.interpreter(&statements)?;
     Ok(())
 }

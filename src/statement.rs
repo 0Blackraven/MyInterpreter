@@ -174,7 +174,7 @@ impl Resolvable for StatementType {
 }
 
 impl StatementType {
-    pub fn evaluate(&mut self, interpreter: &mut Interpreter) -> LoxResult<()> {
+    pub fn evaluate(&self, interpreter: &mut Interpreter) -> LoxResult<()> {
         match self {
             StatementType::ExpressionStatement(value) => {
                 value.evaluate(interpreter)?;
@@ -216,7 +216,7 @@ impl StatementType {
                 Ok(())
             }
             StatementType::ReturnStatement(prop) => {
-                let value = match &mut prop.value {
+                let value = match &prop.value {
                     Some(expr) => expr.evaluate(interpreter)?,
                     None => Literal::Basic(AtomicLiteral::Nil),
                 };
@@ -266,7 +266,7 @@ impl StatementType {
     }
 
     pub fn evaluate_blocks(
-        statements: &mut Vec<StatementType>,
+        statements: &[StatementType],
         interpreter: &mut Interpreter,
     ) -> LoxResult<()> {
         let previous = Rc::clone(&interpreter.env);
@@ -284,7 +284,7 @@ impl StatementType {
     }
 
     pub fn evaluate_func_block(
-        statement: &mut StatementType,
+        statement: &StatementType,
         closure: Rc<RefCell<crate::environment::Environment>>,
         interpreter: &mut Interpreter,
     ) -> LoxResult<()> {
@@ -298,18 +298,18 @@ impl StatementType {
         result
     }
 
-    pub fn evaluate_if(ifinput: &mut IfProps, interpreter: &mut Interpreter) -> LoxResult<()> {
+    pub fn evaluate_if(ifinput: &IfProps, interpreter: &mut Interpreter) -> LoxResult<()> {
         let comparison = ifinput.comparison.evaluate(interpreter)?;
 
         if is_truthy(&comparison) {
             ifinput.ifcase.evaluate(interpreter)?;
-        } else if let Some(elsecase) = &mut ifinput.elsecase {
+        } else if let Some(elsecase) = &ifinput.elsecase {
             elsecase.evaluate(interpreter)?;
         }
         Ok(())
     }
 
-    pub fn evaluate_while(wild: &mut WhileProps, interpreter: &mut Interpreter) -> LoxResult<()> {
+    pub fn evaluate_while(wild: &WhileProps, interpreter: &mut Interpreter) -> LoxResult<()> {
         while {
             let cond = wild.condition.evaluate(interpreter)?;
             is_truthy(&cond)
