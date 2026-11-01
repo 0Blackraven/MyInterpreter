@@ -3,12 +3,24 @@ import cors from "cors";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 
+dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = 3001;
+let url = "";
 
-app.use(cors());
+if (process.env.URL == undefined) {
+  url = "*";
+}else{
+  url = process.env.URL;
+}
+
+app.use(cors({
+  origin: url,
+  methods: ["GET", "POST"],
+}));
 app.use(express.json());
 
 const INTERPRETER_PATH = path.resolve(
