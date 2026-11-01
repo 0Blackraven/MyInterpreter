@@ -1,4 +1,3 @@
-// took around 85 sec
 
 class Tree {
   init(item, depth) {

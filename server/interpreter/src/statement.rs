@@ -267,7 +267,11 @@ impl StatementType {
     }
 
     pub fn evaluate_blocks(
+<<<<<<< HEAD:server/interpreter/src/statement.rs
         statements: &Vec<StatementType>,
+=======
+        statements: &[StatementType],
+>>>>>>> origin/master:src/statement.rs
         interpreter: &mut Interpreter,
     ) -> LoxResult<()> {
         let previous = Rc::clone(&interpreter.env);
@@ -285,7 +289,7 @@ impl StatementType {
     }
 
     pub fn evaluate_func_block(
-        statement: &mut StatementType,
+        statement: &StatementType,
         closure: Rc<RefCell<crate::environment::Environment>>,
         interpreter: &mut Interpreter,
     ) -> LoxResult<()> {

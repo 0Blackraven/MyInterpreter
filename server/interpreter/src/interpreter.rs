@@ -30,8 +30,8 @@ impl Interpreter {
         self.local.insert(expr.clone(), depth);
     }
 
-    pub fn interpreter(&mut self, mut statements: Vec<StatementType>) -> LoxResult<()> {
-        for statement in &mut statements {
+    pub fn interpreter(&mut self, statements: &[StatementType]) -> LoxResult<()> {
+        for statement in statements {
             statement.evaluate(self)?;
         }
         Ok(())

@@ -56,8 +56,7 @@ impl Callable for LoxFunction {
             closure.borrow_mut().define(param.clone(), arg)?;
         }
 
-        let mut body_clone = (*self.body).clone();
-        let result = StatementType::evaluate_func_block(&mut body_clone, closure, interpreter);
+        let result = StatementType::evaluate_func_block(&self.body, closure, interpreter);
         
         match result {
             Ok(()) => {
