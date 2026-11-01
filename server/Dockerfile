@@ -11,10 +11,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
 
 # Copy Rust binary from builder
-COPY --from=rust-builder /app/target/release/interpreter ./server/interpreter/target/release/interpreter
+COPY --from=rust-builder /app/target/release/interpreter server/interpreter/target/release/interpreter
 
 # Copy Node source
-COPY server/express/package*.json ./server/express/
+COPY server/express/package*.json server/express/
 WORKDIR /app/server/express
 RUN npm install
 COPY server/express/ .
