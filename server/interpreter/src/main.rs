@@ -72,6 +72,6 @@ fn run(source: &str) -> LoxResult<()> {
     let mut interpreter = interpreter::Interpreter::new();
     let mut resolver = resolver::Resolver::new(&mut interpreter);
     resolver.resolve(&statements)?;
-    interpreter.interpreter(statements)?;
+    interpreter.interpreter(&statements)?;
     Ok(())
 }
