@@ -6,12 +6,12 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-const INTERPRETER_PATH = path.resolve(
+const INTERPRETER_PATH = process.env.INTERPRETER_BIN || path.resolve(
   __dirname,
   "..",
   "..",
