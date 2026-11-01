@@ -119,6 +119,7 @@ impl Environment {
             return self.assign(token, value);
         }
         let ancestor = self.ancestor(dist)?;
-        ancestor.borrow_mut().assign(token, value)
+        let result = ancestor.borrow_mut().assign(token, value);
+        result
     }
 }

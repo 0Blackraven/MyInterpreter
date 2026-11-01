@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(222 47% 11%);
+  --color-foreground: hsl(210 40% 98%);
+  --color-primary: hsl(217 91% 60%);
+  --color-border: hsl(217 33% 17%);
+  --color-secondary: hsl(217 33% 17%);
+  --color-muted: hsl(217 33% 17%);
+  --color-accent: hsl(217 33% 17%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-card: hsl(222 47% 11%);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+* {
+  color: #ffffff;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a,
+label,
+input,
+button,
+textarea {
+  color: #ffffff;
+}

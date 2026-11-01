@@ -91,8 +91,7 @@ impl Parser {
             match self.declaration() {
                 Ok(statement) => statements.push(statement),
                 Err(e) => {
-                    eprintln!("{}", e);
-                    self.synchronize();
+                    return Err(e);
                 }
             }
         }
