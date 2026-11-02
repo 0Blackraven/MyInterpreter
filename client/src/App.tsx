@@ -17,7 +17,8 @@ function App() {
     setResult(null);
 
     try {
-      const response = await fetch(import.meta.env.VITE_API_URL ||"http://localhost:3001/api/run", {
+      const baseUrl:string = import.meta.env.VITE_API_URL;
+      const response = await fetch(baseUrl+"/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
